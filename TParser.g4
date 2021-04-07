@@ -27,14 +27,7 @@ options {
 // The function bodies could also appear in the definitions section, but I want to maximize
 // Java compatibility, so we can also create a Java parser from this grammar.
 // Still, some tweaking is necessary after the Java file generation (e.g. bool -> boolean).
-@parser::members {
-/* public parser declarations/members section */
-bool myAction() { return true; }
-bool doesItBlend() { return true; }
-void cleanUp() {}
-void doInit() {}
-void doAfter() {}
-}
+@parser::members {/* public parser declarations/members section */}
 
 // Appears in the public part of the parser in the h file.
 @parser::declarations {/* private parser declarations section */}
@@ -68,52 +61,26 @@ void doAfter() {}
 @parser::basevisitordefinitions {/* base visitor definitions section */}
 
 // Actual grammar start.
-main: stat+ EOF;
-divide : ID (and_ GreaterThan)? {doesItBlend()}?;
-and_ @init{ doInit(); } @after { doAfter(); } : And ;
+main: (nl | ruleStmt | stmt)* EOF;
 
-conquer:
-	divide+
-	| {doesItBlend()}? and_ { myAction(); }
-	| ID (LessThan* divide)?? { $ID.text; }
-;
+ruleStmt: KRule Token RuleAppend Path+ nl;
 
-// Unused rule to demonstrate some of the special features.
-unused[double input = 111] returns [double calculated] locals [int _a, double _b, int _c] @init{ doInit(); } @after { doAfter(); } :
-	stat
-;
-catch [...] {
-  // Replaces the standard exception handling.
-}
-finally {
-  cleanUp();
-}
+stmt: listStmt | pipeStmt | groupStmt;
 
-unused2:
-	(unused[1] .)+ (Colon | Semicolon | Plus)? ~Semicolon
-;
+listStmt: KList ID (listSearchStmt | listEnumStmt);
 
-stat: expr Equal expr Semicolon
-    | expr Semicolon
-;
+listSearchStmt: ListSearch Path;
 
-expr: expr Star expr
-    | expr Plus expr
-    | OpenPar expr ClosePar
-    | <assoc = right> expr QuestionMark expr Colon expr
-    | <assoc = right> expr Equal expr
-    | identifier = id
-    | flowControl
-    | INT
-    | String
-;
+listEnumStmt: ListEnum (NL1 listEnumStmtItem)+ nl;
 
-flowControl:
-	Return expr # Return
-	| Continue # Continue
-;
+listEnumStmtItem: ListEnumItem Token+;
 
-id: ID;
-array : OpenCurly el += INT (Comma el += INT)* CloseCurly;
-idarray : OpenCurly element += id (Comma element += id)* CloseCurly;
-any: t = .;
+groupStmt: ID (Times ID)+ OpenCurly nl stmt+ CloseCurly nl;
+
+pipeStmt: Stage (operation Stage)* nl;
+
+operation: (Mult | Single) Token assignment* Single;
+
+assignment: Assign (ID | SubID);
+
+nl: NL1+;

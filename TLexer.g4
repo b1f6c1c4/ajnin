@@ -20,14 +20,7 @@ lexer grammar TLexer;
 @lexer::context {/* lexer context section */}
 
 // Appears in the public part of the lexer in the h file.
-@lexer::members {/* public lexer declarations section */
-bool canTestFoo() { return true; }
-bool isItFoo() { return true; }
-bool isItBar() { return true; }
-
-void myFooLexerAction() { /* do something*/ };
-void myBarLexerAction() { /* do something*/ };
-}
+@lexer::members {/* public lexer declarations section */}
 
 // Appears in the private part of the lexer in the h file.
 @lexer::declarations {/* private lexer declarations/members section */}
@@ -35,52 +28,49 @@ void myBarLexerAction() { /* do something*/ };
 // Appears in line with the other class member definitions in the cpp file.
 @lexer::definitions {/* lexer definitions section */}
 
-channels { CommentsChannel, DirectiveChannel }
+KList: 'list';
+KRule: 'rule';
 
-tokens {
-	DUMMY
-}
+ID: 'a'..'z' | 'A'..'Z';
+SubID: ID [0-9];
 
-Return: 'return';
-Continue: 'continue';
+ListSearch: ':=' -> mode(prePath);
+ListEnum: '::=';
+ListEnumItem: '+=';
+RuleAppend: '|=';
 
-INT: Digit+;
-Digit: [0-9];
+Times: '*';
 
-ID: LETTER (LETTER | '0'..'9')*;
+Mult: '>>';
+Single: '--';
+
 fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
+Token: LETTER ((LETTER | '0'..'9' | '_' | '-')* (LETTER | '0'..'9'))?;
 
-LessThan: '<';
-GreaterThan:  '>';
-Equal: '=';
-And: 'and';
+OpenCurly: '{';
+CloseCurly: '}';
 
-Colon: ':';
-Semicolon: ';';
-Plus: '+';
-Minus: '-';
-Star: '*';
-OpenPar: '(';
-ClosePar: ')';
-OpenCurly: '{' -> pushMode(Mode1);
-CloseCurly: '}' -> popMode;
-QuestionMark: '?';
-Comma: ',' -> skip;
-Dollar: '$' -> more, mode(Mode1);
-Ampersand: '&' -> type(DUMMY);
+Comment : '#' ~[\r\n]* NL1 -> skip;
+WS: [ \t]+ -> skip;
+BNL: '\\' '\r'? '\n' -> skip;
+NL1: '\r'? '\n';
 
-String: '"' .*? '"';
-Foo: {canTestFoo()}? 'foo' {isItFoo()}? { myFooLexerAction(); };
-Bar: 'bar' {isItBar()}? { myBarLexerAction(); };
-Any: Foo Dot Bar? DotDot Baz;
+OpenPar: '(' -> more, mode(stage);
 
-Comment : '#' ~[\r\n]* '\r'? '\n' -> channel(CommentsChannel);
-WS: [ \t\r\n]+ -> channel(99);
+Dollar: '$' -> more, mode(assign);
 
-fragment Baz: 'Baz';
+mode prePath;
+PathWS: [ \t]+ -> skip;
+PrePathText: . -> more, mode(path);
 
-mode Mode1;
-Dot: '.';
+mode path;
+Path: NL1 -> mode(DEFAULT_MODE);
+PathText: . -> more;
 
-mode Mode2;
-DotDot: '..';
+mode stage;
+Stage: ')' -> mode(DEFAULT_MODE);
+StageText: . -> more;
+
+mode assign;
+Assign: '=' -> mode(DEFAULT_MODE);
+AssignText: ~'=' -> more;
