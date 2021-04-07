@@ -20,18 +20,19 @@ set(ANTLR_EXECUTABLE /usr/share/java/antlr-4.9.2-complete.jar)
 find_package(ANTLR REQUIRED)
 
 # Call macro to add lexer and grammar to your build dependencies.
-antlr_target(SampleGrammarLexer TLexer.g4 LEXER
-        PACKAGE ajnin)
-antlr_target(SampleGrammarParser TParser.g4 PARSER
-        PACKAGE ajnin
-        DEPENDS_ANTLR SampleGrammarLexer
-        COMPILE_FLAGS -lib ${ANTLR_SampleGrammarLexer_OUTPUT_DIR})
+antlr_target(TLexer TLexer.g4 LEXER
+        PACKAGE parsing)
+antlr_target(TParser TParser.g4 PARSER
+        PACKAGE parsing
+        DEPENDS_ANTLR TLexer
+        COMPILE_FLAGS -lib ${ANTLR_TLexer_OUTPUT_DIR} -visitor)
 
 # include generated files in project environment
-include_directories(${ANTLR_SampleGrammarLexer_OUTPUT_DIR})
-include_directories(${ANTLR_SampleGrammarParser_OUTPUT_DIR})
+include_directories(${ANTLR_TLexer_OUTPUT_DIR})
+include_directories(${ANTLR_TParser_OUTPUT_DIR})
+include_directories(${ANTLR_TVisitor_OUTPUT_DIR})
 
 add_executable(ajnin main.cpp
-        ${ANTLR_SampleGrammarLexer_CXX_OUTPUTS}
-        ${ANTLR_SampleGrammarParser_CXX_OUTPUTS})
+        ${ANTLR_TLexer_CXX_OUTPUTS}
+        ${ANTLR_TParser_CXX_OUTPUTS} manager.cpp manager.hpp)
 target_link_libraries(ajnin antlr4_static)

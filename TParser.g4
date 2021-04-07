@@ -67,13 +67,15 @@ ruleStmt: KRule Token RuleAppend Path+ nl;
 
 stmt: listStmt | pipeStmt | groupStmt;
 
-listStmt: KList ID (listSearchStmt | listEnumStmt);
+listStmt: KList ID (listSearchStmt | listEnumStmt | listInlineEnumStmt);
 
 listSearchStmt: ListSearch Path;
 
-listEnumStmt: ListEnum (NL1 listEnumStmtItem)+ nl;
+listEnumStmt: ListEnum ListItemNL listEnumStmtItem+ nl;
 
-listEnumStmtItem: ListEnumItem Token+;
+listEnumStmtItem: ListEnumItem ListItemToken+ ListItemNL;
+
+listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
 groupStmt: ID (Times ID)+ OpenCurly nl stmt+ CloseCurly nl;
 

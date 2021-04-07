@@ -35,8 +35,8 @@ ID: 'a'..'z' | 'A'..'Z';
 SubID: ID [0-9];
 
 ListSearch: ':=' -> mode(prePath);
-ListEnum: '::=';
-ListEnumItem: '+=';
+ListEnum: '::=' -> mode(listItem);
+ListEnumItem: '+=' -> mode(listItem);
 RuleAppend: '|=';
 
 Times: '*';
@@ -74,3 +74,8 @@ StageText: . -> more;
 mode assign;
 Assign: '=' -> mode(DEFAULT_MODE);
 AssignText: ~'=' -> more;
+
+mode listItem;
+ListItemNL: '\r'? '\n' -> mode(DEFAULT_MODE);
+ListItemToken: ~[ \t\r\n]+;
+ListItemWS: [ \t]+ -> skip;
