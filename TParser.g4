@@ -79,9 +79,11 @@ listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
 groupStmt: ID (Times ID)* OpenCurly nl stmt+ CloseCurly nl;
 
-pipeStmt: Stage (operation Stage)* nl;
+pipeStmt: stage operation* nl;
 
-operation: (Mult | Single) Token assignment* Single;
+stage: Stage;
+
+operation: (Mult | Single) Token assignment* Single stage;
 
 assignment: Assign (ID | SubID);
 

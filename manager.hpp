@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <map>
+#include <memory>
 #include <string>
 #include "TParser.h"
 #include "TParserBaseVisitor.h"
@@ -31,22 +32,36 @@ namespace parsing {
         CS deps;
     };
 
+    struct build_t {
+        S art;
+        S rule;
+        SS deps;
+        MS<S> vars;
+
+        build_t &operator+=(build_t &&o);
+    };
+    using pbuild_t = std::shared_ptr<build_t>;
+
     class manager : public TParserBaseVisitor {
         struct ctx_t {
             ctx_t *prev;
-            MC<S> ass;
-            S operator[](const C &s);
+            MC<list_item_t *> ass;
+            list_item_t *operator[](const C &s);
         };
 
         MS<rule_t> _rules;
         MC<list_t> _lists;
+        MS<pbuild_t> _builds;
 
         ctx_t *_current{};
         list_t *_current_list{};
+        pbuild_t _current_build{};
 
         const bool _debug{};
         const size_t _debug_limit{};
         size_t _depth{};
+
+        [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
 
     public:
         explicit manager(bool debug = false, size_t limit = 15) : _debug{ debug }, _debug_limit{ limit } { }
@@ -63,6 +78,14 @@ namespace parsing {
 
         antlrcpp::Any visitPipeStmt(TParser::PipeStmtContext *ctx) override;
 
+        antlrcpp::Any visitStage(TParser::StageContext *ctx) override;
+
+        antlrcpp::Any visitOperation(TParser::OperationContext *ctx) override;
+
+        antlrcpp::Any visitAssignment(TParser::AssignmentContext *ctx) override;
+
         antlrcpp::Any visitRuleStmt(TParser::RuleStmtContext *ctx) override;
+
+        friend std::ostream &operator<<(std::ostream &os, const manager &mgr);
     };
 }

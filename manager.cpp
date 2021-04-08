@@ -1,5 +1,7 @@
 #include "manager.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <iostream>
 #include <stack>
@@ -11,10 +13,53 @@ C as_id(antlr4::tree::TerminalNode *s) {
     return s->getText()[0];
 }
 
-S manager::ctx_t::operator[](const C &s) {
+list_item_t *manager::ctx_t::operator[](const C &s) {
     if (ass.contains(s)) return ass[s];
     if (!prev) return {};
     return prev->operator[](s);
+}
+
+build_t &build_t::operator+=(build_t &&o) {
+    if (art.empty())
+        return *this = std::move(o);
+
+    if (rule != o.rule)
+        throw std::runtime_error{ "Conflict rule for " + art };
+    if (!std::equal(vars.begin(), vars.end(), o.vars.begin()))
+        throw std::runtime_error{ "Conflict var for " + art };
+
+    for (auto &dep : o.deps)
+        deps.emplace_back(std::move(dep));
+    o.deps.clear();
+}
+
+std::pair<S, bool> manager::expand(const S &s0) const {
+    auto s = s0;
+    auto flag = false;
+    for (size_t i{}; i < s.size(); i++) {
+        if (s[i] != '$') continue;
+        if (i == s.size() - 1) throw std::runtime_error{ "Invalid path " + s0 };
+        if (s[i + 1] == '$') {
+            if (flag) throw std::runtime_error{ "Multiple globs in " + s0 };
+            flag = true;
+            i++;
+            continue;
+        }
+        auto a = (*_current)[s[i + 1]];
+        if (!a) throw std::runtime_error{ "List "s + s[i + 1] + " not enumerated yet"};
+        auto st = [&]() {
+            if (i != s.size() - 2 && std::isdigit(s[i + 2])) {
+                auto v = s[i + 2] - '0';
+                if (v >= a->args.size())
+                    return ""s;
+                return a->args[v];
+            }
+            return a->name;
+        }();
+        s.replace(i, 2, st);
+        i += st.size() - 1;
+    }
+    return { s, flag };
 }
 
 antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
@@ -36,15 +81,15 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
     ii.push(0);
     while (true) {
         auto c = as_id(ids[ii.size() - 1]);
-        const auto &li = _lists[c];
+        auto &li = _lists[c];
         if (li.items.empty()) return {};
 
-        next.ass[c] = li.items[ii.top()].name;
+        next.ass[c] = &li.items[ii.top()];
         if (ii.size() == ids.size()) {
             if (_debug) {
                 std::cerr << std::string(_depth * 2, ' ') << "ajnin:";
                 for (auto id : ids)
-                    std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)];
+                    std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)]->name;
                 std::cerr << '\n';
             }
             visitChildren(ctx);
@@ -179,24 +224,10 @@ void glob_search(P directory, PC start, const PC &finish, const S &filename, std
 
 antlrcpp::Any manager::visitListSearchStmt(TParser::ListSearchStmtContext *ctx) {
     auto s0 = ctx->Path()->getText();
-    if (s0.ends_with('\n')) s0.pop_back();
-    auto s = s0;
-    S cur;
-    auto flag = false;
-    for (size_t i{}; i < s.size(); i++) {
-        if (s[i] != '$') continue;
-        if (i == s.size() - 1) throw std::runtime_error{ "Invalid path " + s0 };
-        if (s[i + 1] == '$') {
-            if (flag) throw std::runtime_error{ "Multiple globs in " + s0 };
-            flag = true;
-            i++;
-            continue;
-        }
-        auto a = (*_current)[s[i + 1]];
-        if (a.empty()) throw std::runtime_error{ "List "s + a[i + 1] + " not enumerated yet"};
-        s.replace(i, 2, a);
-        i += a.size() - 1;
-    }
+    if (s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up" };
+    s0.pop_back();
+
+    auto [s, flag] = expand(s0);
     if (!flag) throw std::runtime_error{ "No glob in " + s0 };
 
     std::filesystem::path p{ s };
@@ -233,13 +264,59 @@ antlrcpp::Any manager::visitListInlineEnumStmt(TParser::ListInlineEnumStmtContex
 }
 
 antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
-    // TODO: pipe
-    for (auto &[c, l] : _lists) {
-        std::cout << c << " ->";
-        for (auto &it : l.items)
-            std::cout << " " << it.name;
-        std::cout << "\n";
+    _current_build = std::make_shared<build_t>();
+
+    ctx->stage()->accept(this);
+    for (auto op : ctx->operation())
+        op->accept(this);
+
+    _current_build = nullptr;
+    return {};
+}
+
+antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
+    auto s0 = ctx->Stage()->getText();
+    if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up" };
+    s0 = s0.substr(0, s0.length() - 2);
+
+    auto [s, flag] = expand(s0);
+    if (flag) throw std::runtime_error{ "Glob not allow in " + s0 };
+    _current_build->deps.emplace_back(std::move(s));
+    return {};
+}
+
+antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
+    _current_build->rule = ctx->Token()->getText();
+    for (auto ass : ctx->assignment())
+        ass->accept(this);
+
+    auto prev = std::move(_current_build);
+    _current_build = std::make_shared<build_t>();
+    ctx->stage()->accept(this);
+    prev->art = _current_build->deps.front();
+    *_builds[prev->art] += std::move(*prev);
+    return {};
+}
+
+antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
+    auto as = ctx->Assign()->getText();
+    if (!as.starts_with('$') || !as.ends_with('=')) throw std::runtime_error{ "Lexer messed up" };
+    as = as.substr(0, as.length() - 2);
+
+    auto id = ctx->ID() ? ctx->ID()->getText() : ctx->SubID()->getText();
+    if (id.empty() || id.size() > 2) throw std::runtime_error{ "Lexer messed up" };
+    auto a = (*_current)[id[0]];
+    if (!a) return {};
+
+    if (id.size() == 1) {
+        _current_build->vars[as] = a->name;
+        return {};
     }
+
+    auto v = id[1] - '0';
+    if (v >= a->args.size())
+        return {};
+    _current_build->vars[as] = a->args[v];
     return {};
 }
 
@@ -247,4 +324,24 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
     for (auto p : ctx->Path())
         _rules[ctx->Token()->getText()].deps.emplace_back(p->getText());
     return {};
+}
+
+std::ostream &operator<<(std::ostream &os, const manager &mgr) {
+    for (auto &[art, pb] : mgr._builds) {
+        os << "build " << art << ": " << pb->rule;
+        for (auto &dep : pb->deps)
+            os << " " << dep;
+        if (mgr._rules.contains(pb->rule)) {
+            auto &r = mgr._rules.at(pb->rule);
+            if (!r.deps.empty()) {
+                os << " |";
+                for (auto &dep : r.deps)
+                    os << " " << dep;
+            }
+        }
+        os << '\n';
+        for (auto &[va, vl] : pb->vars)
+            os << "    " << va << " = " << vl << '\n';
+        os << '\n';
+    }
 }
