@@ -1,3 +1,20 @@
+/* Copyright (C) 2021 b1f6c1c4
+ *
+ * This file is part of ajnin.
+ *
+ * ajnin is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, version 3.
+ *
+ * ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <iostream>
 
 #include <antlr4-runtime.h>
@@ -17,6 +34,23 @@ int main(int argc, char *argv[]) {
     for (; argc; argc--, argv++) {
         if (*argv == "-h"s || *argv == "--help"s) {
             std::cout << "Usage: ajnin [-h|--help] [-d|--debug] [-o <output>] [<file>]\n";
+            std::cout << R"(
+Copyright (C) 2021 b1f6c1c4
+
+This file is part of ajnin.
+
+ajnin is free software: you can redistribute it and/or modify it under the
+terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3.
+
+ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
+)";
             return 0;
         }
         if (*argv == "-d"s || *argv == "--debug"s)

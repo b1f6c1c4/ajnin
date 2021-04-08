@@ -97,3 +97,8 @@ p*c {
     #     must agree with each other.
 }
 ```
+
+## Legal
+
+This project is licensed under **GNU AGPL v3.0** only. (AGPL-3.0-only).
+
