@@ -5,6 +5,7 @@
 #include <stack>
 
 using namespace parsing;
+using namespace std::string_literals;
 
 C as_id(antlr4::tree::TerminalNode *s) {
     return s->getText()[0];
@@ -62,7 +63,7 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
             ii.push(0);
     }
 
-    _depth++;
+    _depth--;
     if (_debug) {
         std::cerr << std::string(_depth * 2, ' ') << "ajnin: Exiting group of";
         for (auto id : ids)
@@ -93,22 +94,123 @@ antlrcpp::Any manager::visitListStmt(TParser::ListStmtContext *ctx) {
                 std::cerr << "...\n";
                 break;
             }
-            std::cerr << it.name << "[";
-            auto flag = false;
-            for (auto &f : it.args) {
-                if (flag) std::cerr << ",";
-                flag = true;
-                std::cerr << f;
+            std::cerr << it.name;
+            if (!it.args.empty()) {
+                std::cerr << "[";
+                auto flag = false;
+                for (auto &f : it.args) {
+                    if (flag) std::cerr << ",";
+                    flag = true;
+                    std::cerr << f;
+                }
+                std::cerr << ']';
             }
-            std::cerr << "]\n";
+            std::cerr << '\n';
         }
     }
     _current_list = nullptr;
     return {};
 }
 
+using P = std::filesystem::path;
+using PC = P::const_iterator;
+using DI = std::filesystem::directory_iterator;
+
+struct glob_t {
+    S l, r;
+    bool exact;
+    enum ans_t {
+        REJECT,
+        ACCEPT,
+        MATCH,
+    };
+    explicit glob_t(const S &str) {
+        auto pos = str.find("$$");
+        if (pos == std::string::npos) { // filename may NOT have glob.
+            l = str, r = {}, exact = true;
+            return;
+        }
+        l = str.substr(0, pos);
+        r = str.substr(pos + 2);
+        exact = false;
+    }
+    [[nodiscard]] std::pair<ans_t, std::string> match(const S &str) const {
+        if (!str.starts_with(l)) return { REJECT, {} };
+        if (exact)
+            return { l.length() + r.length() > str.length() ? REJECT : ACCEPT, {} };
+        if (l.length() + r.length() >= str.length()) return { REJECT, {} };
+        if (!str.ends_with(r)) return { REJECT, {} };
+        return { MATCH, str.substr(l.length(), str.length() - l.length() - r.length()) };
+    }
+};
+
+// directory: actual dir that's being searched
+// start: head of pattern
+// finish: tail of pattern
+// filename: very tail of pattern
+void glob_search(P directory, PC start, const PC &finish, const S &filename, std::function<bool(const S &)> cb) {
+    // proceed if there is no glob
+    while (start != finish && start->string().find("$$") == std::string::npos)
+        directory /= *start++;
+
+    DI it{ directory, std::filesystem::directory_options::skip_permission_denied };
+    if (it == DI{}) return;
+
+    if (start == finish) {
+        glob_t glob{ filename };
+        do {
+            if (it->is_directory()) continue;
+            if (auto [r, s] = glob.match(it->path().filename().string()); r != glob_t::REJECT)
+                if (cb(s)) return;
+        } while (++it != std::filesystem::directory_iterator());
+    } else {
+        glob_t glob{ start->string() };
+        do {
+            if (!it->is_directory()) continue;
+            auto [r, s] = glob.match(std::prev(it->path().end())->string());
+            if (r == glob_t::REJECT) continue;
+            if (r == glob_t::ACCEPT)
+                glob_search(it->path(), std::next(start), finish, filename, cb);
+            else
+                glob_search(it->path(), std::next(start), finish, filename, [&](const S &){ cb(s); return true; });
+        } while (++it != std::filesystem::directory_iterator());
+    }
+}
+
 antlrcpp::Any manager::visitListSearchStmt(TParser::ListSearchStmtContext *ctx) {
-    // TODO: search file
+    auto s0 = ctx->Path()->getText();
+    if (s0.ends_with('\n')) s0.pop_back();
+    auto s = s0;
+    S cur;
+    auto flag = false;
+    for (size_t i{}; i < s.size(); i++) {
+        if (s[i] != '$') continue;
+        if (i == s.size() - 1) throw std::runtime_error{ "Invalid path " + s0 };
+        if (s[i + 1] == '$') {
+            if (flag) throw std::runtime_error{ "Multiple globs in " + s0 };
+            flag = true;
+            i++;
+            continue;
+        }
+        auto a = (*_current)[s[i + 1]];
+        if (a.empty()) throw std::runtime_error{ "List "s + a[i + 1] + " not enumerated yet"};
+        s.replace(i, 2, a);
+        i += a.size() - 1;
+    }
+    if (!flag) throw std::runtime_error{ "No glob in " + s0 };
+
+    std::filesystem::path p{ s };
+    auto ins = [&](const P &pa) {
+        _current_list->items.emplace_back(list_item_t{ pa.string() });
+        return false;
+    };
+    if (p.is_absolute()) {
+        auto rp = p.parent_path().relative_path();
+        glob_search(p.root_path(), std::begin(rp), std::end(rp), p.filename().string(), ins);
+    } else {
+        auto pa = p.parent_path();
+        glob_search(std::filesystem::current_path(), std::begin(pa), std::end(pa), p.filename().string(), ins);
+    }
     return {};
 }
 

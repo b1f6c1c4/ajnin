@@ -7,7 +7,6 @@
 
 using namespace parsing;
 using namespace antlr4;
-using namespace std::string_literals;
 
 int main(int , const char **) {
     ANTLRInputStream input{ std::cin };

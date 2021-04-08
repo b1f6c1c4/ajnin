@@ -77,7 +77,7 @@ listEnumStmtItem: ListEnumItem ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
-groupStmt: ID (Times ID)+ OpenCurly nl stmt+ CloseCurly nl;
+groupStmt: ID (Times ID)* OpenCurly nl stmt+ CloseCurly nl;
 
 pipeStmt: Stage (operation Stage)* nl;
 
