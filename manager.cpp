@@ -31,6 +31,7 @@ build_t &build_t::operator+=(build_t &&o) {
     for (auto &dep : o.deps)
         deps.emplace_back(std::move(dep));
     o.deps.clear();
+    return *this;
 }
 
 std::pair<S, bool> manager::expand(const S &s0) const {
@@ -326,7 +327,7 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
     return {};
 }
 
-std::ostream &operator<<(std::ostream &os, const manager &mgr) {
+std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
     for (auto &[art, pb] : mgr._builds) {
         os << "build " << art << ": " << pb->rule;
         for (auto &dep : pb->deps)
@@ -344,4 +345,5 @@ std::ostream &operator<<(std::ostream &os, const manager &mgr) {
             os << "    " << va << " = " << vl << '\n';
         os << '\n';
     }
+    return os;
 }

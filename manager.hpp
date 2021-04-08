@@ -88,4 +88,6 @@ namespace parsing {
 
         friend std::ostream &operator<<(std::ostream &os, const manager &mgr);
     };
+
+    std::ostream &operator<<(std::ostream &os, const manager &mgr);
 }
