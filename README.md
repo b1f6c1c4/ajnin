@@ -1,6 +1,6 @@
 # ajnin: Yet another Ninja generator
 
-## Design choices
+Our ideology:
 
 - Only generate `build`s, not `rule`s.
 - Input should be in a intuitive & terse DSL.
@@ -18,12 +18,23 @@ c {
 }
 ```
 
-Run: `ajnin build.ajnin | tee build.ninja`:
+Run: `ajnin -o build.ninja build.ajnin`:
 
 ```ninja
 build build/main.o: cc src/main.c | /usr/bin/cc
 build build/util.o: cc src/util.c | /usr/bin/cc
 build build/a.out: ld src/main.c src/util.o
+```
+
+## Install
+
+Get the repo and use CMake.
+You should have already learned how to use CMake and Ninja.
+
+## Command line
+
+```
+Usage: ajnin [-h|--help] [-d|--debug] [-o <output>] [<file>]
 ```
 
 ## Longer DSL example

@@ -225,7 +225,7 @@ void glob_search(P directory, PC start, const PC &finish, const S &filename, std
 
 antlrcpp::Any manager::visitListSearchStmt(TParser::ListSearchStmtContext *ctx) {
     auto s0 = ctx->Path()->getText();
-    if (s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up" };
+    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
     s0.pop_back();
 
     auto [s, flag] = expand(s0);
@@ -277,7 +277,7 @@ antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
 
 antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
     auto s0 = ctx->Stage()->getText();
-    if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up" };
+    if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up with ()" };
     s0 = s0.substr(0, s0.length() - 2);
 
     auto [s, flag] = expand(s0);
@@ -301,7 +301,7 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 
 antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
     auto as = ctx->Assign()->getText();
-    if (!as.starts_with('$') || !as.ends_with('=')) throw std::runtime_error{ "Lexer messed up" };
+    if (!as.starts_with('$') || !as.ends_with('=')) throw std::runtime_error{ "Lexer messed up with $=" };
     as = as.substr(0, as.length() - 2);
 
     auto id = ctx->ID() ? ctx->ID()->getText() : ctx->SubID()->getText();
