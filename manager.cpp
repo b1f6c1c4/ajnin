@@ -287,9 +287,13 @@ antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
 }
 
 antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
-    _current_build->rule = ctx->Token()->getText();
-    for (auto ass : ctx->assignment())
-        ass->accept(this);
+    if (!ctx->Token()) {
+        _current_build->rule = "phony";
+    } else {
+        _current_build->rule = ctx->Token()->getText();
+        for (auto ass : ctx->assignment())
+            ass->accept(this);
+    }
 
     auto prev = std::move(_current_build);
     _current_build = std::make_shared<build_t>();
@@ -332,7 +336,28 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
     return {};
 }
 
+antlrcpp::Any manager::visitProlog(TParser::PrologContext *ctx) {
+    auto s0 = ctx->LiteralNL()->getText();
+    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+    s0.pop_back();
+
+    _prolog.emplace_back(std::move(s0));
+    return {};
+}
+
+antlrcpp::Any manager::visitEpilog(TParser::EpilogContext *ctx) {
+    auto s0 = ctx->LiteralNL()->getText();
+    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+    s0.pop_back();
+
+    _epilog.emplace_back(std::move(s0));
+    return {};
+}
+
 std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
+    for (auto &t : mgr._prolog)
+        os << t << '\n';
+
     for (auto &[art, pb] : mgr._builds) {
         os << "build " << art << ": " << pb->rule;
         for (auto &dep : pb->deps)
@@ -350,5 +375,9 @@ std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
                 os << "    " << va << " = " << vl << '\n';
         os << '\n';
     }
+
+    for (auto &t : mgr._epilog)
+        os << t << '\n';
+
     return os;
 }

@@ -78,7 +78,7 @@ options {
 @parser::basevisitordefinitions {/* base visitor definitions section */}
 
 // Actual grammar start.
-main: (nl | ruleStmt | stmt)* EOF;
+main: (nl | ruleStmt | stmt | literal)* EOF;
 
 ruleStmt: KRule Token RuleAppend Path;
 
@@ -100,8 +100,14 @@ pipeStmt: stage operation* nl;
 
 stage: Stage;
 
-operation: (Mult | Single) Token assignment* Single stage;
+operation: (Mult | Single) (Token assignment* Single)? stage;
 
 assignment: Assign (ID | SubID);
+
+literal: prolog | epilog;
+
+prolog: LiteralProlog LiteralNL;
+
+epilog: LiteralEpilog LiteralNL;
 
 nl: NL1+;

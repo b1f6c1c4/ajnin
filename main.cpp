@@ -56,7 +56,7 @@ along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
         if (*argv == "-d"s || *argv == "--debug"s)
             debug = true;
         else if (*argv == "-o"s)
-            out = argv[1];
+            out = argv[1], argc--, argv++;
         else if (!in.empty())
             throw std::runtime_error{ "Too many input files" };
         else

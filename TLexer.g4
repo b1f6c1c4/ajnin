@@ -72,6 +72,9 @@ WS: [ \t]+ -> skip;
 BNL: '\\' '\r'? '\n' -> skip;
 NL1: '\r'? '\n';
 
+LiteralProlog : '> ' -> mode(literal);
+LiteralEpilog : '$> ' -> mode(literal);
+
 OpenPar: '(' -> more, mode(stage);
 
 Dollar: '$' -> more, mode(assign);
@@ -96,3 +99,7 @@ mode listItem;
 ListItemNL: '\r'? '\n' -> mode(DEFAULT_MODE);
 ListItemToken: ~[ \t\r\n]+;
 ListItemWS: [ \t]+ -> skip;
+
+mode literal;
+LiteralNL: '\r'? '\n' -> mode(DEFAULT_MODE);
+LiteralText: . -> more;

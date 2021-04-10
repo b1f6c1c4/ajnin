@@ -74,6 +74,8 @@ namespace parsing {
         list_t *_current_list{};
         pbuild_t _current_build{};
 
+        SS _prolog, _epilog;
+
         const bool _debug{};
         const size_t _debug_limit{};
         size_t _depth{};
@@ -102,6 +104,10 @@ namespace parsing {
         antlrcpp::Any visitAssignment(TParser::AssignmentContext *ctx) override;
 
         antlrcpp::Any visitRuleStmt(TParser::RuleStmtContext *ctx) override;
+
+        antlrcpp::Any visitProlog(TParser::PrologContext *ctx) override;
+
+        antlrcpp::Any visitEpilog(TParser::EpilogContext *ctx) override;
 
         friend std::ostream &operator<<(std::ostream &os, const manager &mgr);
     };
