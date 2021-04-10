@@ -80,7 +80,7 @@ options {
 // Actual grammar start.
 main: (nl | ruleStmt | stmt)* EOF;
 
-ruleStmt: KRule Token RuleAppend Path+ nl;
+ruleStmt: KRule Token RuleAppend Path;
 
 stmt: listStmt | pipeStmt | groupStmt;
 

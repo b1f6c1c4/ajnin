@@ -278,7 +278,7 @@ antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
 antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
     auto s0 = ctx->Stage()->getText();
     if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up with ()" };
-    s0 = s0.substr(0, s0.length() - 2);
+    s0 = s0.substr(1, s0.length() - 2);
 
     auto [s, flag] = expand(s0);
     if (flag) throw std::runtime_error{ "Glob not allow in " + s0 };
@@ -295,7 +295,9 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
     _current_build = std::make_shared<build_t>();
     ctx->stage()->accept(this);
     prev->art = _current_build->deps.front();
-    *_builds[prev->art] += std::move(*prev);
+    auto &pb = _builds[prev->art];
+    if (!pb) pb = std::make_shared<build_t>();
+    *pb += std::move(*prev);
     return {};
 }
 
@@ -322,8 +324,11 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
 }
 
 antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
-    for (auto p : ctx->Path())
-        _rules[ctx->Token()->getText()].deps.emplace_back(p->getText());
+    auto s0 = ctx->Path()->getText();
+    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+    s0.pop_back();
+
+    _rules[ctx->Token()->getText()].deps.emplace_back(s0);
     return {};
 }
 
@@ -340,9 +345,9 @@ std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
                     os << " " << dep;
             }
         }
-        os << '\n';
-        for (auto &[va, vl] : pb->vars)
-            os << "    " << va << " = " << vl << '\n';
+        if (!pb->vars.empty())
+            for (auto &[va, vl] : pb->vars)
+                os << "    " << va << " = " << vl << '\n';
         os << '\n';
     }
     return os;
