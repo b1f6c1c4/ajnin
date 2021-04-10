@@ -20,6 +20,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include "TParser.h"
 #include "TParserBaseVisitor.h"
@@ -76,10 +77,13 @@ namespace parsing {
 
         SS _prolog, _epilog;
 
+        mutable std::set<S> _env_notif;
+
         const bool _debug{};
         const size_t _debug_limit{};
         size_t _depth{};
 
+        [[nodiscard]] S expand_env(const S &s0) const;
         [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
 
     public:

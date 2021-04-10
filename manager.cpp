@@ -34,8 +34,37 @@ build_t &build_t::operator+=(build_t &&o) {
     return *this;
 }
 
-std::pair<S, bool> manager::expand(const S &s0) const {
+S manager::expand_env(const S &s0) const {
     auto s = s0;
+    for (size_t i{}; i < s.size(); i++) {
+        if (s[i] != '$') continue;
+        if (i == s.size() - 1) throw std::runtime_error{ "Invalid string " + s0 };
+        switch (s[i + 1]) {
+            case '$':
+            default:
+                i++;
+                continue;
+            case '{':
+                break;
+        }
+
+        auto e = s.find('}', i + 2);
+        if (e == std::string::npos) throw std::runtime_error{ "Invalid string " + s0 };
+        auto env = s.substr(i + 2, e - i - 2);
+        const char *st = std::getenv(env.c_str());
+        if (!st) {
+            if (_env_notif.insert(env).second)
+                std::cerr << "ajnin: Warning: Environment variable ${" << env << "} not found.\n";
+            st = "";
+        }
+        s.replace(i, e - i + 1, st);
+        i = e + 1;
+    }
+    return s;
+}
+
+std::pair<S, bool> manager::expand(const S &s0) const {
+    auto s = expand_env(s0);
     auto flag = false;
     for (size_t i{}; i < s.size(); i++) {
         if (s[i] != '$') continue;
@@ -249,18 +278,20 @@ antlrcpp::Any manager::visitListSearchStmt(TParser::ListSearchStmtContext *ctx) 
 antlrcpp::Any manager::visitListEnumStmtItem(TParser::ListEnumStmtItemContext *ctx) {
     list_item_t item;
     auto flag = false;
-    for (auto t : ctx->ListItemToken())
+    for (auto t : ctx->ListItemToken()) {
+        auto st = expand_env(t->getText());
         if (!flag)
-            item.name = t->getText(), flag = true;
+            item.name = std::move(st), flag = true;
         else
-            item.args.emplace_back(t->getText());
+            item.args.emplace_back(std::move(st));
+    }
     _current_list->items.emplace_back(std::move(item));
     return {};
 }
 
 antlrcpp::Any manager::visitListInlineEnumStmt(TParser::ListInlineEnumStmtContext *ctx) {
     for (auto t : ctx->ListItemToken())
-        _current_list->items.emplace_back(list_item_t{ t->getText() });
+        _current_list->items.emplace_back(list_item_t{ expand_env(t->getText()) });
     return {};
 }
 
@@ -332,7 +363,7 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
     if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
     s0.pop_back();
 
-    _rules[ctx->Token()->getText()].deps.emplace_back(s0);
+    _rules[ctx->Token()->getText()].deps.emplace_back(expand_env(s0));
     return {};
 }
 
@@ -341,7 +372,7 @@ antlrcpp::Any manager::visitProlog(TParser::PrologContext *ctx) {
     if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
     s0.pop_back();
 
-    _prolog.emplace_back(std::move(s0));
+    _prolog.emplace_back(expand_env(s0));
     return {};
 }
 
@@ -350,7 +381,7 @@ antlrcpp::Any manager::visitEpilog(TParser::EpilogContext *ctx) {
     if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
     s0.pop_back();
 
-    _epilog.emplace_back(std::move(s0));
+    _epilog.emplace_back(expand_env(s0));
     return {};
 }
 
