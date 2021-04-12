@@ -374,23 +374,31 @@ antlrcpp::Any manager::visitIncludeStmt(TParser::IncludeStmtContext *ctx) {
 
     {
         std::ifstream fin{ s };
+        list_item_t item;
+        auto empty = true;
         while (!fin.eof()) {
-            list_item_t item;
-            std::stringstream ss{ [&]() {
-                S line;
-                std::getline(fin, line);
-                return line;
-            }() };
+            S line;
+            std::getline(fin, line);
             if (!fin.good()) break;
-            ss >> item.name;
-            if (!ss.good() || item.name.empty()) continue;
-            S field;
-            while (!ss.eof()) {
-                ss >> field;
-                if (!ss.good() || field.empty()) continue;
-                item.args.emplace_back(std::move(field));
+            line = expand_env(line);
+            if (!line.ends_with(" \\")) {
+                if (empty) {
+                    _current_list->items.emplace_back(list_item_t{ line });
+                    continue;
+                }
+                item.args.emplace_back(line);
+                _current_list->items.emplace_back(std::move(item));
+                item = list_item_t{};
+                empty = true;
+            } else {
+                line = line.substr(0, line.size() - 2);
+                if (empty) {
+                    item.name = line;
+                    empty = false;
+                    continue;
+                }
+                item.args.emplace_back(line);
             }
-            _current_list->items.emplace_back(std::move(item));
         }
     }
 
