@@ -54,6 +54,7 @@ SubID: ID [0-9];
 ListSearch: ':=' -> mode(prePath);
 ListEnum: '::=' -> mode(listItem);
 ListEnumItem: '+=' -> mode(listItem);
+ListEnumRItem: '-=' -> mode(listItem);
 RuleAppend: '|=' -> mode(prePath);
 
 Times: '*';

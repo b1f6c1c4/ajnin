@@ -20,6 +20,7 @@ syn match ajninKeyword "^rule\>" nextgroup=ajninRule skipwhite
 syn match ajninOperator ":=" nextgroup=ajninPath
 syn match ajninOperator "::="
 syn match ajninOperator "+="
+syn match ajninOperator "-="
 syn match ajninOperator "|=" nextgroup=ajninPath
 syn match ajninOperator "\*"
 

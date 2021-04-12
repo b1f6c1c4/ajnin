@@ -90,7 +90,7 @@ listSearchStmt: ListSearch Path;
 
 listEnumStmt: ListEnum ListItemNL listEnumStmtItem+ nl;
 
-listEnumStmtItem: ListEnumItem ListItemToken+ ListItemNL;
+listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 

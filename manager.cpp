@@ -285,7 +285,14 @@ antlrcpp::Any manager::visitListEnumStmtItem(TParser::ListEnumStmtItemContext *c
         else
             item.args.emplace_back(std::move(st));
     }
-    _current_list->items.emplace_back(std::move(item));
+    auto &s = _current_list->items;
+    if (ctx->ListEnumItem())
+        s.emplace_back(std::move(item));
+    else if (ctx->ListEnumRItem())
+        s.erase(std::remove_if(s.begin(), s.end(), [&](const list_item_t &it) {
+            if (it.name != item.name) return false;
+            return std::equal(it.args.begin(), it.args.end(), item.args.begin());
+        }), s.end());
     return {};
 }
 
