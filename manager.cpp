@@ -19,6 +19,19 @@ list_item_t *manager::ctx_t::operator[](const C &s) {
     return prev->operator[](s);
 }
 
+std::optional<S> manager::ctx_t::operator[](const S &s) {
+    if (vars.contains(s)) return vars[s];
+    if (!prev) return {};
+    return prev->operator[](s);
+}
+
+pbuild_t manager::ctx_t::make_build() const {
+    auto pb = prev ? prev->make_build() : std::make_shared<build_t>();
+    for (auto &dep : ideps)
+        pb->ideps.insert(dep);
+    return pb;
+}
+
 build_t &build_t::operator+=(build_t &&o) {
     if (art.empty())
         return *this = std::move(o);
@@ -32,6 +45,16 @@ build_t &build_t::operator+=(build_t &&o) {
         deps.emplace_back(std::move(dep));
     o.deps.clear();
     return *this;
+}
+
+S expand_quote(S s, char c) {
+    for (size_t i{}; i < s.size(); i++) {
+        if (s[i] != '$') continue;
+        if (i == s.size() - 1) continue;
+        if (s[i + 1] == c)
+            i++;
+    }
+    return s;
 }
 
 S manager::expand_env(const S &s0) const {
@@ -324,8 +347,10 @@ antlrcpp::Any manager::visitPipeGroup(TParser::PipeGroupContext *ctx) {
 // _current_artifact will be set.
 antlrcpp::Any manager::visitArtifact(TParser::ArtifactContext *ctx) {
     visitChildren(ctx);
-    auto plist = !ctx->Tilde() ? &build_t::deps : &build_t::ideps;
-    (_current_build.get()->*plist).emplace_back(_current_artifact);
+    if (!ctx->Tilde())
+        _current_build->deps.emplace_back(_current_artifact);
+    else
+        _current_build->ideps.insert(_current_artifact);
     return {};
 }
 
@@ -333,7 +358,7 @@ antlrcpp::Any manager::visitArtifact(TParser::ArtifactContext *ctx) {
 // _current_artifact will be set.
 antlrcpp::Any manager::visitPipe(TParser::PipeContext *ctx) {
     auto prev = std::move(_current_build);
-    _current_build = std::make_shared<build_t>();
+    _current_build = _current->make_build();
     visitChildren(ctx);
     _current_build = std::move(prev);
     return {};
@@ -345,9 +370,9 @@ antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
     if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up with ()" };
     s0 = s0.substr(1, s0.length() - 2);
 
-    auto [s, flag] = expand(s0);
+    auto [s, glob] = expand(s0);
     _current_artifact = std::move(s);
-    if (flag) throw std::runtime_error{ "Glob not allow in " + s0 };
+    if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
     return {};
 }
 
@@ -380,23 +405,50 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 
 antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
     auto as = ctx->Assign()->getText();
-    if (!as.starts_with('$') || !as.ends_with('=')) throw std::runtime_error{ "Lexer messed up with $=" };
-    as = as.substr(0, as.length() - 2);
+    if (!as.starts_with('&') || !as.ends_with('=')) throw std::runtime_error{ "Lexer messed up with &=" };
+    auto append = as[as.size() - 3] == '+';
+    as = as.substr(0, as.length() - (append ? 3 : 2));
 
-    auto id = ctx->ID() ? ctx->ID()->getText() : ctx->SubID()->getText();
-    if (id.empty() || id.size() > 2) throw std::runtime_error{ "Lexer messed up" };
-    auto a = (*_current)[id[0]];
-    if (!a) return {};
+    S str;
+    if (ctx->ID()) {
+        auto id = ctx->ID()->getText();
+        if (id.size() != 1) throw std::runtime_error{ "Lexer messed up with ID" };
+        auto a = (*_current)[id[0]];
+        if (!a) return {};
+        str = a->name;
+    } else if (ctx->SubID()) {
+        auto id = ctx->SubID()->getText();
+        if (id.size() != 1) throw std::runtime_error{ "Lexer messed up with SubID" };
+        auto a = (*_current)[id[0]];
+        if (!a) return {};
+        auto v = id[1] - '0';
+        if (v >= a->args.size())
+            return {};
+        str = a->args[v];
+    } else if (ctx->SingleString()) {
+        auto s0 = ctx->SingleString()->getText();
+        if (!s0.starts_with('\'') || !s0.ends_with('\'')) throw std::runtime_error{ "Lexer messed up with ''" };
+        s0 = s0.substr(1, s0.size() - 2);
+        s0 = expand_quote(s0, '\'');
+        s0 = expand_env(s0);
+        str = std::move(s0);
+    } else if (ctx->DoubleString()) {
+        auto s0 = ctx->DoubleString()->getText();
+        if (!s0.starts_with('"') || !s0.ends_with('"')) throw std::runtime_error{ "Lexer messed up with \"\"" };
+        s0 = s0.substr(1, s0.size() - 2);
+        s0 = expand_quote(s0, '"');
+        auto [s, glob] = expand(s0);
+        if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
+        str = std::move(s);
+    } else
+        throw std::runtime_error{ "Parser messed up in assignment" };
 
-    if (id.size() == 1) {
-        _current_build->vars[as] = a->name;
-        return {};
-    }
+    if (append)
+        if (auto o = (*_current)[as]; o.has_value())
+            str = o.value() + str;
 
-    auto v = id[1] - '0';
-    if (v >= a->args.size())
-        return {};
-    _current_build->vars[as] = a->args[v];
+    auto &dest = _current_build ? _current_build->vars : _current->vars;
+    dest[as] = str;
     return {};
 }
 
@@ -447,7 +499,7 @@ std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
         }
         if (!pb->ideps.empty()) {
             if (!flag) os << " |";
-            flag = true;
+            // flag = true;
             for (auto &dep : pb->ideps)
                 os << " " << dep;
         }

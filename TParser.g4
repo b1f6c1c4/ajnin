@@ -94,7 +94,7 @@ listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
-groupStmt: ID (Times ID)* OpenCurly nl stmt+ CloseCurly nl;
+groupStmt: (ID (Times ID)*)? OpenCurly assignment* (Tilde Stage+)? nl stmt+ CloseCurly nl;
 
 pipeStmt: pipe nl;
 
@@ -108,7 +108,7 @@ stage: Stage;
 
 operation: (Mult | Single) (Token assignment* Single)? stage;
 
-assignment: Assign (ID | SubID);
+assignment: Assign (Dollar ID | Dollar SubID | SingleString | DoubleString);
 
 literal: prolog | epilog;
 

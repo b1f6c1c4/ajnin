@@ -82,7 +82,12 @@ LiteralEpilog : '$> ' -> mode(literal);
 
 OpenPar: '(' -> more, mode(stage);
 
-Dollar: '$' -> more, mode(assign);
+Ampersand: '&' -> more, mode(assign);
+
+Dollar: '$';
+
+SingleString: '\'' (~'\'' | '$\'')* '\'';
+DoubleString: '"' (~'"' | '$"')* '"';
 
 mode prePath;
 PathWS: [ \t]+ -> skip;
@@ -97,8 +102,8 @@ Stage: ')' -> mode(DEFAULT_MODE);
 StageText: . -> more;
 
 mode assign;
-Assign: '=' -> mode(DEFAULT_MODE);
-AssignText: ~'=' -> more;
+Assign: '+'? '=' -> mode(DEFAULT_MODE);
+AssignText: ~[+=] -> more;
 
 mode listItem;
 ListItemNL: '\r'? '\n' -> mode(DEFAULT_MODE);

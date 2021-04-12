@@ -23,7 +23,7 @@ syn match ajninOperator "+="
 syn match ajninOperator "-="
 syn match ajninOperator "|=" nextgroup=ajninPath
 syn match ajninOperator "\*"
-syn match ajninOperator "~"
+syn match ajninOperator "\~"
 syn match ajninOperator "\["
 syn match ajninOperator "\]"
 
@@ -36,11 +36,16 @@ syn match ajninListRef "\$[a-zA-Z][0-9]\?"
 syn match ajninEnv "\${[^}]*}" contained
 
 syn match ajninRule "\(rule\s\+\)\@<=\S\+"
-syn match ajninRule "\(--\|>>\)\@<=\S\+\(--\)\@="
+syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|&\)\@="
 syn match ajninRule ">>"
+
+syn match ajninAssignment "&[^+=]\++\?="
 
 syn region ajninPath start="(" end=")" contains=ajninListRef,ajninGlob,ajninEnv
 syn region ajninPath start="\([:|]=\)\@<=" end="$" contains=ajninListRef,ajninGlob,ajninEnv
+
+syn region ajninSingleString start="'" skip="\$'" end="'" contains=ajninEnv
+syn region ajninDoubleString start="\"" skip="\$\"" end="\"" contains=ajninListRef,ajninEnv
 
 syn keyword ajninTodo TODO FIXME contained
 
@@ -53,6 +58,9 @@ hi def link ajninList Function
 hi def link ajninListRef Identifier
 hi def link ajninEnv Identifier
 hi def link ajninRule Type
+hi def link ajninAssignment Number
+hi def link ajninSingleString Float
+hi def link ajninDoubleString Float
 hi def link ajninPath String
 hi def link ajninTodo Todo
 

@@ -20,6 +20,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include "TParser.h"
@@ -28,6 +29,7 @@
 namespace parsing {
     using S = std::string;
     using SS = std::deque<S>;
+    using Ss = std::set<S>;
     using C = char;
     using CS = std::set<char>;
     template <typename T>
@@ -53,7 +55,8 @@ namespace parsing {
     struct build_t {
         S art;
         S rule;
-        SS deps, ideps;
+        SS deps;
+        Ss ideps;
         MS<S> vars;
 
         build_t &operator+=(build_t &&o);
@@ -64,7 +67,11 @@ namespace parsing {
         struct ctx_t {
             ctx_t *prev;
             MC<list_item_t *> ass;
-            list_item_t *operator[](const C &s);
+            MS<S> vars;
+            Ss ideps;
+            [[nodiscard]] list_item_t *operator[](const C &s);
+            [[nodiscard]] std::optional<S> operator[](const S &s);
+            [[nodiscard]] pbuild_t make_build() const;
         };
 
         MS<rule_t> _rules;
