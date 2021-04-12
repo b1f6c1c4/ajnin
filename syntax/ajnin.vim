@@ -20,6 +20,8 @@ syn match ajninKeyword "^\s*foreach\>" nextgroup=ajninList skipwhite
 syn match ajninKeyword "^\s*include\>" nextgroup=ajninKeyword skipwhite
 syn match ajninKeyword "\<if\>" nextgroup=ajninKeyword skipwhite
 syn match ajninKeyword "\<else\>" nextgroup=ajninKeyword skipwhite
+syn match ajninKeyword "\<also\>" nextgroup=ajninRule skipwhite
+
 syn match ajninKeyword "\(if\s\+\)\@<=-n\>" nextgroup=ajninKeyword skipwhite
 syn match ajninKeyword "\(if\s\+\)\@<=-z\>" nextgroup=ajninKeyword skipwhite
 
@@ -40,8 +42,9 @@ syn match ajninListRef "\$[a-zA-Z][0-9]\?"
 syn match ajninEnv "\${[^}]*}" contained
 
 syn match ajninRule "\(rule\s\+\)\@<=[0-9a-zA-Z _-]\+"
-syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|&\)\@="
-syn match ajninRule ">>"
+syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|>>\|<<\|&\)\@="
+syn match ajninRule ">>\(\s*[0-9a-zA-Z_-]\)\@!"
+syn match ajninRule "\([0-9a-zA-Z_-]\s*\)\@<!<<"
 
 syn match ajninAssignment "&[^+=]\++\?="
 

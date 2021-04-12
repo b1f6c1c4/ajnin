@@ -74,6 +74,8 @@ namespace parsing {
             rule_t zrule;
             MS<rule_t> rules;
             Ss ideps;
+            pbuild_t app;
+            bool app_also;
 
             [[nodiscard]] list_item_t *operator[](const C &s) const;
             [[nodiscard]] rule_t operator[](const S &s) const;
@@ -133,6 +135,8 @@ namespace parsing {
         antlrcpp::Any visitStage(TParser::StageContext *ctx) override;
 
         antlrcpp::Any visitOperation(TParser::OperationContext *ctx) override;
+
+        antlrcpp::Any visitAlsoGroup(TParser::AlsoGroupContext *ctx) override;
 
         antlrcpp::Any visitAssignment(TParser::AssignmentContext *ctx) override;
 

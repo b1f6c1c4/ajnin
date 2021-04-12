@@ -9,7 +9,7 @@ let b:did_indent = 1
 setlocal nolisp
 setlocal autoindent
 setlocal indentexpr=AjninIndent(v:lnum)
-setlocal indentkeys+=0=},0=]
+setlocal indentkeys+=0=},0=],-,>,<o>
 
 if exists('*AjninIndent')
   finish
@@ -33,10 +33,10 @@ function! AjninIndent(lnum)
   if l:prevl =~ '^\s*[+-]=' && l:thisl !~ '^\s*[+-]='
     let l:ind -= shiftwidth()
   endif
-  if l:prevl =~ '^\s*--.*)\s*$'
+  if l:prevl =~ '^\s*\(--\|>>\|also\).*)\s*$'
     let l:ind -= shiftwidth()
   endif
-  if l:thisl =~ '^\s*--'
+  if l:thisl =~ '^\s*\(--\|>>\|also\)'
     let l:ind += shiftwidth()
   endif
   if l:thisl =~ '^\s*[\]}]'

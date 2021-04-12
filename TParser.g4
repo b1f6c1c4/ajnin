@@ -102,7 +102,7 @@ listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
-groupStmt: (KForeach ID (Times ID)*)? stmts nl;
+groupStmt: (KForeach ID (Times ID)* | stage (Single Token assignment*)? Append KAlso?)? stmts nl;
 
 pipeStmt: pipe nl;
 
@@ -110,14 +110,17 @@ pipeGroup: Bra NL1? artifact+ Ket;
 
 artifact: (stage | pipe) Tilde? NL1?;
 
-pipe: (stage | pipeGroup) operation+
-    | (stage | pipeGroup) (NL1 operation)+;
+pipe: (stage | pipeGroup) (operation alsoGroup*)+
+    | (stage | pipeGroup) (NL1 operation (NL1 alsoGroup)*)+;
 
 stage: Stage;
 
 operation: (Mult | Single) (Token assignment* Single)? stage;
 
-assignment: Assign (Dollar ID | Dollar SubID | SingleString | DoubleString);
+alsoGroup: KAlso Bra operation+ Ket
+    | KAlso Bra (NL1 operation)+ NL1 Ket;
+
+assignment: Assign (Dollar ID | Dollar SubID | SingleString | DoubleString)?;
 
 literal: prolog | epilog;
 

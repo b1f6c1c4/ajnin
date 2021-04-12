@@ -55,7 +55,8 @@ build_t &build_t::operator+=(build_t &&o) {
         throw std::runtime_error{ "Conflict var for " + art };
 
     for (auto &dep : o.deps)
-        deps.emplace_back(std::move(dep));
+        if (std::find(deps.begin(), deps.end(), dep) == deps.end())
+            deps.emplace_back(std::move(dep));
     o.deps.clear();
     return *this;
 }
@@ -219,6 +220,32 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
 
     auto ids = ctx->ID();
 
+    if (ctx->stage()) {
+        _current->app_also = ctx->KAlso();
+        _current->app = _current->make_build();
+
+        rule_t rule{};
+        _current_rule = &rule;
+        if (!ctx->Token()) {
+            _current->app->rule = "phony";
+        } else {
+            _current->app->rule = ctx->Token()->getText();
+            *_current_rule = (*_current)[_current->app->rule];
+            for (auto ass : ctx->assignment())
+                ass->accept(this);
+        }
+        _current_rule = nullptr;
+        for (auto &[k, v] : rule.vars)
+            _current->app->vars[k] = v;
+        for (auto &dep : rule.ideps)
+            _current->app->ideps.insert(dep);
+
+        ctx->stage()->accept(this);
+        _current->app->art = _current_artifact;
+
+        _current_artifact.clear();
+    }
+
     if (_debug) {
         std::cerr << std::string(_depth * 2, ' ') << "ajnin: Entering group of";
         for (auto id : ids)
@@ -228,7 +255,7 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
     _depth++;
 
     if (ids.empty()) {
-        visitChildren(ctx);
+        ctx->stmts()->accept(this);
     } else {
         std::stack<size_t> ii;
         ii.push(0);
@@ -245,7 +272,7 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
                         std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)]->name;
                     std::cerr << '\n';
                 }
-                visitChildren(ctx);
+                ctx->stmts()->accept(this);
                 _current->zrule = rule_t{};
                 _current->rules.clear();
                 _current->ideps.clear();
@@ -461,6 +488,20 @@ antlrcpp::Any manager::visitListInlineEnumStmt(TParser::ListInlineEnumStmtContex
 antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
     _current_build = nullptr;
     ctx->pipe()->accept(this);
+    for (auto ptr = _current; ptr; ptr = ptr->prev)
+        if (ptr->app) {
+            auto orig_artifact = _current_artifact;
+
+            auto b = std::make_shared<build_t>(*ptr->app);
+            b->deps.emplace_back(std::move(_current_artifact));
+
+            auto &pb = _builds[b->art];
+            if (!pb) pb = std::make_shared<build_t>();
+            *pb += std::move(*b);
+
+            if (ptr->app_also)
+                _current_artifact = orig_artifact;
+        }
     _current_build = nullptr;
     return {};
 }
@@ -546,6 +587,13 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
     return {};
 }
 
+antlrcpp::Any manager::visitAlsoGroup(TParser::AlsoGroupContext *ctx) {
+    auto orig_artifact = _current_artifact;
+    visitChildren(ctx);
+    _current_artifact = orig_artifact;
+    return {};
+}
+
 antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
     auto as = ctx->Assign()->getText();
     if (!as.starts_with('&') || !as.ends_with('=')) throw std::runtime_error{ "Lexer messed up with &=" };
@@ -583,15 +631,15 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
         auto [s, glob] = expand(s0);
         if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
         str = std::move(s);
-    } else
-        throw std::runtime_error{ "Parser messed up in assignment" };
+    } else {
+        _current_rule->vars.erase(as);
+    }
 
     auto &rule = _current_rule->name;
     if (append)
         str = (*_current)[rule].vars[as] + str;
 
-    auto &dest = _current_rule->vars;
-    dest[as] = str;
+    _current_rule->vars[as] = str;
     return {};
 }
 

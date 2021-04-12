@@ -51,6 +51,7 @@ KForeach: 'foreach';
 KInclude: 'include';
 KIf: 'if';
 KElse: 'else';
+KAlso: 'also';
 
 IsEmpty: '-z';
 IsNonEmpty: '-n';
@@ -68,6 +69,7 @@ Times: '*';
 
 Mult: '>>';
 Single: '--';
+Append: '<<';
 
 fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
 Token: LETTER ((LETTER | '0'..'9' | '_' | '-')* (LETTER | '0'..'9'))?;
