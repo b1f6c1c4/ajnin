@@ -14,18 +14,17 @@ syn match ajninComment "#.*$" contains=@Spell,ajninTodo
 syn region ajninLiteral start="^> " end=".*$" contains=ajninEnv
 syn region ajninLiteral start="^$> " end=".*$" contains=ajninEnv
 
-syn match ajninKeyword "^list\>" nextgroup=ajninList skipwhite
-syn match ajninKeyword "^rule\>" nextgroup=ajninRule skipwhite
+syn match ajninKeyword "^\s*rule\>" nextgroup=ajninRule skipwhite
+syn match ajninKeyword "^\s*list\>" nextgroup=ajninList skipwhite
+syn match ajninKeyword "^\s*foreach\>" nextgroup=ajninList skipwhite
 
 syn match ajninOperator ":=" nextgroup=ajninPath
 syn match ajninOperator "::="
-syn match ajninOperator "+="
-syn match ajninOperator "-="
+syn match ajninOperator "[+-]="
 syn match ajninOperator "|=" nextgroup=ajninPath
 syn match ajninOperator "\*"
 syn match ajninOperator "\~"
-syn match ajninOperator "\["
-syn match ajninOperator "\]"
+syn match ajninOperator "[\[\]]"
 
 syn match ajninGlob "\$\$"
 
@@ -35,14 +34,14 @@ syn match ajninListRef "\$[a-zA-Z][0-9]\?"
 
 syn match ajninEnv "\${[^}]*}" contained
 
-syn match ajninRule "\(rule\s\+\)\@<=\S\+"
+syn match ajninRule "\(rule\s\+\)\@<=[0-9a-zA-Z _-]\+"
 syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|&\)\@="
 syn match ajninRule ">>"
 
 syn match ajninAssignment "&[^+=]\++\?="
 
 syn region ajninPath start="(" end=")" contains=ajninListRef,ajninGlob,ajninEnv
-syn region ajninPath start="\([:|]=\)\@<=" end="$" contains=ajninListRef,ajninGlob,ajninEnv
+syn region ajninPath start="\(:=\)\@<=" end="$" contains=ajninListRef,ajninGlob,ajninEnv
 
 syn region ajninSingleString start="'" skip="\$'" end="'" contains=ajninEnv
 syn region ajninDoubleString start="\"" skip="\$\"" end="\"" contains=ajninListRef,ajninEnv

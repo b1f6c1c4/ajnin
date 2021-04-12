@@ -47,6 +47,7 @@ lexer grammar TLexer;
 
 KList: 'list';
 KRule: 'rule';
+KForeach: 'foreach';
 
 ID: 'a'..'z' | 'A'..'Z';
 SubID: ID [0-9];
@@ -55,7 +56,7 @@ ListSearch: ':=' -> mode(prePath);
 ListEnum: '::=' -> mode(listItem);
 ListEnumItem: '+=' -> mode(listItem);
 ListEnumRItem: '-=' -> mode(listItem);
-RuleAppend: '|=' -> mode(prePath);
+RuleAppend: '|=';
 
 Times: '*';
 
@@ -83,7 +84,6 @@ LiteralEpilog : '$> ' -> mode(literal);
 OpenPar: '(' -> more, mode(stage);
 
 Ampersand: '&' -> more, mode(assign);
-
 Dollar: '$';
 
 SingleString: '\'' (~'\'' | '$\'')* '\'';

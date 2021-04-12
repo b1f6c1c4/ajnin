@@ -78,11 +78,11 @@ options {
 @parser::basevisitordefinitions {/* base visitor definitions section */}
 
 // Actual grammar start.
-main: (nl | ruleStmt | stmt | literal)* EOF;
+main: (nl | stmt | literal)* EOF;
 
-ruleStmt: KRule Token RuleAppend Path;
+stmt: listStmt | ruleStmt | pipeStmt | groupStmt;
 
-stmt: listStmt | pipeStmt | groupStmt;
+ruleStmt: KRule Token* (RuleAppend stage+ | assignment+) nl;
 
 listStmt: KList ID (listSearchStmt | listEnumStmt | listInlineEnumStmt);
 
@@ -94,7 +94,7 @@ listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
-groupStmt: (ID (Times ID)*)? OpenCurly assignment* (Tilde Stage+)? nl stmt+ CloseCurly nl;
+groupStmt: (KForeach ID (Times ID)*)? OpenCurly nl stmt+ CloseCurly nl;
 
 pipeStmt: pipe nl;
 
@@ -102,7 +102,8 @@ pipeGroup: Bra NL1? artifact+ Ket;
 
 artifact: (stage | pipe) Tilde? NL1?;
 
-pipe: (stage | pipeGroup) operation+;
+pipe: (stage | pipeGroup) operation+
+    | (stage | pipeGroup) (NL1 operation)+;
 
 stage: Stage;
 

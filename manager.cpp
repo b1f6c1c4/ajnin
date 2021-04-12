@@ -13,16 +13,29 @@ C as_id(antlr4::tree::TerminalNode *s) {
     return s->getText()[0];
 }
 
-list_item_t *manager::ctx_t::operator[](const C &s) {
-    if (ass.contains(s)) return ass[s];
+rule_t &rule_t::operator+=(const rule_t &o) {
+    if (!name.empty() && !o.name.empty() && name != o.name)
+        throw std::runtime_error{ "Cannot add rules under different names" };
+    if (!o.name.empty())
+        name = o.name;
+    for (auto &[k, v] : o.vars)
+        vars[k] = v;
+    for (auto &dep : o.ideps)
+        ideps.insert(dep);
+    return *this;
+}
+
+list_item_t *manager::ctx_t::operator[](const C &s) const {
+    if (ass.contains(s)) return ass.at(s);
     if (!prev) return {};
     return prev->operator[](s);
 }
 
-std::optional<S> manager::ctx_t::operator[](const S &s) {
-    if (vars.contains(s)) return vars[s];
-    if (!prev) return {};
-    return prev->operator[](s);
+rule_t manager::ctx_t::operator[](const S &s) const {
+    auto r = prev ? prev->operator[](s) : rule_t{ s };
+    r += zrule;
+    if (rules.contains(s)) r += rules.at(s);
+    return r;
 }
 
 pbuild_t manager::ctx_t::make_build() const {
@@ -115,12 +128,44 @@ std::pair<S, bool> manager::expand(const S &s0) const {
     return { s, flag };
 }
 
+manager::manager(bool debug, size_t limit) : _debug{ debug }, _debug_limit{ limit } { }
+
+antlrcpp::Any manager::visitMain(TParser::MainContext *ctx) {
+    ctx_t next{ _current };
+    _current = &next;
+    visitChildren(ctx);
+    _current = next.prev;
+    return {};
+}
+
+antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
+    SS rules;
+    for (auto t : ctx->Token())
+        rules.emplace_back(t->getText());
+
+    if (rules.empty()) {
+        _current_rule = &_current->zrule;
+        visitChildren(ctx);
+        _current_rule = nullptr;
+        _current_artifact.clear();
+        return {};
+    }
+
+    for (auto &rule : rules) {
+        _current_rule = &_current->rules[rule];
+        _current_rule->name = rule;
+        visitChildren(ctx);
+        _current_rule = nullptr;
+        _current_artifact.clear();
+    }
+    return {};
+}
+
 antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
     ctx_t next{ _current };
     _current = &next;
 
     auto ids = ctx->ID();
-    if (ids.empty()) throw std::runtime_error{ "Empty group list of lists." };
 
     if (_debug) {
         std::cerr << std::string(_depth * 2, ' ') << "ajnin: Entering group of";
@@ -130,35 +175,42 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
     }
     _depth++;
 
-    std::stack<size_t> ii;
-    ii.push(0);
-    while (true) {
-        auto c = as_id(ids[ii.size() - 1]);
-        auto &li = _lists[c];
-        if (li.items.empty()) return {};
+    if (ids.empty()) {
+        visitChildren(ctx);
+    } else {
+        std::stack<size_t> ii;
+        ii.push(0);
+        while (true) {
+            auto c = as_id(ids[ii.size() - 1]);
+            auto &li = _lists[c];
+            if (li.items.empty()) return {};
 
-        next.ass[c] = &li.items[ii.top()];
-        if (ii.size() == ids.size()) {
-            if (_debug) {
-                std::cerr << std::string(_depth * 2, ' ') << "ajnin:";
-                for (auto id : ids)
-                    std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)]->name;
-                std::cerr << '\n';
+            next.ass[c] = &li.items[ii.top()];
+            if (ii.size() == ids.size()) {
+                if (_debug) {
+                    std::cerr << std::string(_depth * 2, ' ') << "ajnin:";
+                    for (auto id : ids)
+                        std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)]->name;
+                    std::cerr << '\n';
+                }
+                visitChildren(ctx);
+                _current->zrule = rule_t{};
+                _current->rules.clear();
+                _current->ideps.clear();
+                ii.top()++;
             }
-            visitChildren(ctx);
-            ii.top()++;
-        }
 
-        if (ii.top() == li.items.size()) {
-            ii.pop();
-            if (ii.empty())
-                break;
-            ii.top()++;
-            continue;
-        }
+            if (ii.top() == li.items.size()) {
+                ii.pop();
+                if (ii.empty())
+                    break;
+                ii.top()++;
+                continue;
+            }
 
-        if (ii.size() < ids.size())
-            ii.push(0);
+            if (ii.size() < ids.size())
+                ii.push(0);
+        }
     }
 
     _depth--;
@@ -371,8 +423,10 @@ antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
     s0 = s0.substr(1, s0.length() - 2);
 
     auto [s, glob] = expand(s0);
-    _current_artifact = std::move(s);
     if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
+    if (_current_rule)
+        _current_rule->ideps.insert(s);
+    _current_artifact = std::move(s);
     return {};
 }
 
@@ -384,13 +438,21 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
     if (_current_build->deps.empty() && _current_build->ideps.empty())
         _current_build->deps.emplace_back(std::move(_current_artifact));
 
+    rule_t rule{};
+    _current_rule = &rule;
     if (!ctx->Token()) {
         _current_build->rule = "phony";
     } else {
         _current_build->rule = ctx->Token()->getText();
+        *_current_rule = (*_current)[_current_build->rule];
         for (auto ass : ctx->assignment())
             ass->accept(this);
     }
+    _current_rule = nullptr;
+    for (auto &[k, v] : rule.vars)
+        _current_build->vars[k] = v;
+    for (auto &dep : rule.ideps)
+        _current_build->ideps.insert(dep);
 
     ctx->stage()->accept(this);
     _current_build->art = _current_artifact;
@@ -406,8 +468,8 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
     auto as = ctx->Assign()->getText();
     if (!as.starts_with('&') || !as.ends_with('=')) throw std::runtime_error{ "Lexer messed up with &=" };
-    auto append = as[as.size() - 3] == '+';
-    as = as.substr(0, as.length() - (append ? 3 : 2));
+    auto append = as[as.size() - 2] == '+';
+    as = as.substr(1, as.length() - (append ? 3 : 2));
 
     S str;
     if (ctx->ID()) {
@@ -418,7 +480,7 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
         str = a->name;
     } else if (ctx->SubID()) {
         auto id = ctx->SubID()->getText();
-        if (id.size() != 1) throw std::runtime_error{ "Lexer messed up with SubID" };
+        if (id.size() != 2) throw std::runtime_error{ "Lexer messed up with SubID" };
         auto a = (*_current)[id[0]];
         if (!a) return {};
         auto v = id[1] - '0';
@@ -443,21 +505,12 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
     } else
         throw std::runtime_error{ "Parser messed up in assignment" };
 
+    auto &rule = _current_rule->name;
     if (append)
-        if (auto o = (*_current)[as]; o.has_value())
-            str = o.value() + str;
+        str = (*_current)[rule].vars[as] + str;
 
-    auto &dest = _current_build ? _current_build->vars : _current->vars;
+    auto &dest = _current_rule->vars;
     dest[as] = str;
-    return {};
-}
-
-antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
-    auto s0 = ctx->Path()->getText();
-    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
-    s0.pop_back();
-
-    _rules[ctx->Token()->getText()].deps.emplace_back(expand_env(s0));
     return {};
 }
 
@@ -487,25 +540,16 @@ std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
         os << "build " << art << ": " << pb->rule;
         for (auto &dep : pb->deps)
             os << " " << dep;
-        auto flag = false;
-        if (mgr._rules.contains(pb->rule)) {
-            auto &r = mgr._rules.at(pb->rule);
-            if (!r.deps.empty()) {
-                os << " |";
-                flag = true;
-                for (auto &dep : r.deps)
-                    os << " " << dep;
-            }
-        }
         if (!pb->ideps.empty()) {
-            if (!flag) os << " |";
-            // flag = true;
+            os << " |";
             for (auto &dep : pb->ideps)
                 os << " " << dep;
         }
-        if (!pb->vars.empty())
+        if (!pb->vars.empty()) {
+            os << '\n';
             for (auto &[va, vl] : pb->vars)
                 os << "    " << va << " = " << vl << '\n';
+        }
         os << '\n';
     }
 

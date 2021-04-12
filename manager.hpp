@@ -38,7 +38,11 @@ namespace parsing {
     using MC = std::map<C, T>;
 
     struct rule_t {
-        SS deps;
+        S name;
+        MS<S> vars;
+        Ss ideps;
+
+        rule_t &operator+=(const rule_t &o);
     };
 
     struct list_item_t {
@@ -67,20 +71,22 @@ namespace parsing {
         struct ctx_t {
             ctx_t *prev;
             MC<list_item_t *> ass;
-            MS<S> vars;
+            rule_t zrule;
+            MS<rule_t> rules;
             Ss ideps;
-            [[nodiscard]] list_item_t *operator[](const C &s);
-            [[nodiscard]] std::optional<S> operator[](const S &s);
+
+            [[nodiscard]] list_item_t *operator[](const C &s) const;
+            [[nodiscard]] rule_t operator[](const S &s) const;
             [[nodiscard]] pbuild_t make_build() const;
         };
 
-        MS<rule_t> _rules;
         MC<list_t> _lists;
         MS<pbuild_t> _builds;
 
         ctx_t *_current{};
         list_t *_current_list{};
         pbuild_t _current_build{};
+        rule_t *_current_rule{};
         S _current_artifact{};
 
         SS _prolog, _epilog;
@@ -95,7 +101,11 @@ namespace parsing {
         [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
 
     public:
-        explicit manager(bool debug = false, size_t limit = 15) : _debug{ debug }, _debug_limit{ limit } { }
+        explicit manager(bool debug = false, size_t limit = 15);
+
+        antlrcpp::Any visitMain(TParser::MainContext *ctx) override;
+
+        antlrcpp::Any visitRuleStmt(TParser::RuleStmtContext *ctx) override;
 
         antlrcpp::Any visitGroupStmt(TParser::GroupStmtContext *ctx) override;
 
@@ -120,8 +130,6 @@ namespace parsing {
         antlrcpp::Any visitOperation(TParser::OperationContext *ctx) override;
 
         antlrcpp::Any visitAssignment(TParser::AssignmentContext *ctx) override;
-
-        antlrcpp::Any visitRuleStmt(TParser::RuleStmtContext *ctx) override;
 
         antlrcpp::Any visitProlog(TParser::PrologContext *ctx) override;
 
