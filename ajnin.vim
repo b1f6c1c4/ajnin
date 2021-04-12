@@ -23,6 +23,9 @@ syn match ajninOperator "+="
 syn match ajninOperator "-="
 syn match ajninOperator "|=" nextgroup=ajninPath
 syn match ajninOperator "\*"
+syn match ajninOperator "~"
+syn match ajninOperator "\["
+syn match ajninOperator "\]"
 
 syn match ajninGlob "\$\$"
 

@@ -67,6 +67,10 @@ Token: LETTER ((LETTER | '0'..'9' | '_' | '-')* (LETTER | '0'..'9'))?;
 
 OpenCurly: '{';
 CloseCurly: '}';
+Bra: '[';
+Ket: ']';
+
+Tilde: '~';
 
 Comment : '#' ~[\r\n]* NL1 -> skip;
 WS: [ \t]+ -> skip;

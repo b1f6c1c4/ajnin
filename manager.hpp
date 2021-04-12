@@ -53,7 +53,7 @@ namespace parsing {
     struct build_t {
         S art;
         S rule;
-        SS deps;
+        SS deps, ideps;
         MS<S> vars;
 
         build_t &operator+=(build_t &&o);
@@ -74,6 +74,7 @@ namespace parsing {
         ctx_t *_current{};
         list_t *_current_list{};
         pbuild_t _current_build{};
+        S _current_artifact{};
 
         SS _prolog, _epilog;
 
@@ -100,6 +101,12 @@ namespace parsing {
         antlrcpp::Any visitListInlineEnumStmt(TParser::ListInlineEnumStmtContext *ctx) override;
 
         antlrcpp::Any visitPipeStmt(TParser::PipeStmtContext *ctx) override;
+
+        antlrcpp::Any visitPipeGroup(TParser::PipeGroupContext *ctx) override;
+
+        antlrcpp::Any visitArtifact(TParser::ArtifactContext *ctx) override;
+
+        antlrcpp::Any visitPipe(TParser::PipeContext *ctx) override;
 
         antlrcpp::Any visitStage(TParser::StageContext *ctx) override;
 

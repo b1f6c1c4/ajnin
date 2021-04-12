@@ -303,28 +303,62 @@ antlrcpp::Any manager::visitListInlineEnumStmt(TParser::ListInlineEnumStmtContex
 }
 
 antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
-    _current_build = std::make_shared<build_t>();
-
-    ctx->stage()->accept(this);
-    for (auto op : ctx->operation())
-        op->accept(this);
-
+    _current_build = nullptr;
+    ctx->pipe()->accept(this);
     _current_build = nullptr;
     return {};
 }
 
+// _current_build must be valid.
+// _current_build.i?dep will be appended.
+// _current_artifact will be cleared.
+antlrcpp::Any manager::visitPipeGroup(TParser::PipeGroupContext *ctx) {
+    _current_artifact.clear();
+    visitChildren(ctx);
+    _current_artifact.clear();
+    return {};
+}
+
+// _current_build must be valid.
+// _current_build.i?dep will be appended once.
+// _current_artifact will be set.
+antlrcpp::Any manager::visitArtifact(TParser::ArtifactContext *ctx) {
+    visitChildren(ctx);
+    auto plist = !ctx->Tilde() ? &build_t::deps : &build_t::ideps;
+    (_current_build.get()->*plist).emplace_back(_current_artifact);
+    return {};
+}
+
+// _current_build will not be used nor set.
+// _current_artifact will be set.
+antlrcpp::Any manager::visitPipe(TParser::PipeContext *ctx) {
+    auto prev = std::move(_current_build);
+    _current_build = std::make_shared<build_t>();
+    visitChildren(ctx);
+    _current_build = std::move(prev);
+    return {};
+}
+
+// _current_artifact will be set.
 antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
     auto s0 = ctx->Stage()->getText();
     if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up with ()" };
     s0 = s0.substr(1, s0.length() - 2);
 
     auto [s, flag] = expand(s0);
+    _current_artifact = std::move(s);
     if (flag) throw std::runtime_error{ "Glob not allow in " + s0 };
-    _current_build->deps.emplace_back(std::move(s));
     return {};
 }
 
+// _current_build must be valid.
+// _current_build will be replaced by a new empty value.
+// _current_artifact will be set.
 antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
+    // This handles the case when operation follows immediately after stage
+    if (_current_build->deps.empty() && _current_build->ideps.empty())
+        _current_build->deps.emplace_back(std::move(_current_artifact));
+
     if (!ctx->Token()) {
         _current_build->rule = "phony";
     } else {
@@ -333,13 +367,14 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
             ass->accept(this);
     }
 
-    auto prev = std::move(_current_build);
-    _current_build = std::make_shared<build_t>();
     ctx->stage()->accept(this);
-    prev->art = _current_build->deps.front();
-    auto &pb = _builds[prev->art];
+    _current_build->art = _current_artifact;
+
+    auto &pb = _builds[_current_artifact];
     if (!pb) pb = std::make_shared<build_t>();
-    *pb += std::move(*prev);
+    *pb += std::move(*_current_build);
+
+    _current_build = std::make_shared<build_t>();
     return {};
 }
 
@@ -400,13 +435,21 @@ std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
         os << "build " << art << ": " << pb->rule;
         for (auto &dep : pb->deps)
             os << " " << dep;
+        auto flag = false;
         if (mgr._rules.contains(pb->rule)) {
             auto &r = mgr._rules.at(pb->rule);
             if (!r.deps.empty()) {
                 os << " |";
+                flag = true;
                 for (auto &dep : r.deps)
                     os << " " << dep;
             }
+        }
+        if (!pb->ideps.empty()) {
+            if (!flag) os << " |";
+            flag = true;
+            for (auto &dep : pb->ideps)
+                os << " " << dep;
         }
         if (!pb->vars.empty())
             for (auto &[va, vl] : pb->vars)

@@ -96,7 +96,13 @@ listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
 groupStmt: ID (Times ID)* OpenCurly nl stmt+ CloseCurly nl;
 
-pipeStmt: stage operation* nl;
+pipeStmt: pipe nl;
+
+pipeGroup: Bra NL1? artifact+ Ket;
+
+artifact: (stage | pipe) Tilde? NL1?;
+
+pipe: (stage | pipeGroup) operation+;
 
 stage: Stage;
 
