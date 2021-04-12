@@ -128,6 +128,33 @@ std::pair<S, bool> manager::expand(const S &s0) const {
     return { s, flag };
 }
 
+void manager::show_list(const list_t &list) const {
+    if (!_debug) return;
+
+    std::cerr << std::string(_depth * 2, ' ') << "ajnin: List " << list.name
+              << " now is (" << list.items.size() << " items):\n";
+    size_t cnt{};
+    for (auto &it : list.items) {
+        std::cerr << std::string(_depth * 2, ' ') << "           ";
+        if (_debug_limit && cnt++ == _debug_limit) {
+            std::cerr << "...\n";
+            break;
+        }
+        std::cerr << it.name;
+        if (!it.args.empty()) {
+            std::cerr << "[";
+            auto flag = false;
+            for (auto &f : it.args) {
+                if (flag) std::cerr << ",";
+                flag = true;
+                std::cerr << f;
+            }
+            std::cerr << ']';
+        }
+        std::cerr << '\n';
+    }
+}
+
 manager::manager(bool debug, size_t limit) : _debug{ debug }, _debug_limit{ limit } { }
 
 antlrcpp::Any manager::visitMain(TParser::MainContext *ctx) {
@@ -135,6 +162,31 @@ antlrcpp::Any manager::visitMain(TParser::MainContext *ctx) {
     _current = &next;
     visitChildren(ctx);
     _current = next.prev;
+    return {};
+}
+
+antlrcpp::Any manager::visitIfStmt(TParser::IfStmtContext *ctx) {
+    auto decision = [&]() {
+        auto id = ctx->SubID()->getText();
+        if (id.size() != 2) throw std::runtime_error{ "Lexer messed up with SubID" };
+        auto a = (*_current)[id[0]];
+        if (!a) return false;
+        auto v = id[1] - '0';
+        if (v >= a->args.size())
+            return false;
+        return !a->args[v].empty();
+    }() ^ !ctx->IsNonEmpty();
+
+    if (decision) {
+        ctx->stmts(0)->accept(this);
+        return {};
+    }
+
+    if (ctx->ifStmt())
+        ctx->ifStmt()->accept(this);
+    else if (ctx->stmts(1))
+        ctx->stmts(1)->accept(this);
+
     return {};
 }
 
@@ -234,30 +286,7 @@ antlrcpp::Any manager::visitListStmt(TParser::ListStmtContext *ctx) {
     _depth++;
     visitChildren(ctx);
     _depth--;
-    if (_debug) {
-        std::cerr << std::string(_depth * 2, ' ') << "ajnin: List " << c
-                  << " now is (" << _current_list->items.size() << " items):\n";
-        size_t cnt{};
-        for (auto &it : _current_list->items) {
-            std::cerr << std::string(_depth * 2, ' ') << "           ";
-            if (_debug_limit && cnt++ == _debug_limit) {
-                std::cerr << "...\n";
-                break;
-            }
-            std::cerr << it.name;
-            if (!it.args.empty()) {
-                std::cerr << "[";
-                auto flag = false;
-                for (auto &f : it.args) {
-                    if (flag) std::cerr << ",";
-                    flag = true;
-                    std::cerr << f;
-                }
-                std::cerr << ']';
-            }
-            std::cerr << '\n';
-        }
-    }
+    show_list(*_current_list);
     _current_list = nullptr;
     return {};
 }
@@ -325,6 +354,50 @@ void glob_search(P directory, PC start, const PC &finish, const S &filename, std
                 glob_search(it->path(), std::next(start), finish, filename, [&](const S &){ cb(s); return true; });
         } while (++it != std::filesystem::directory_iterator());
     }
+}
+
+antlrcpp::Any manager::visitIncludeStmt(TParser::IncludeStmtContext *ctx) {
+    auto s0 = ctx->Path()->getText();
+    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+    s0.pop_back();
+
+    auto c = as_id(ctx->ID());
+    _current_list = &_lists[c];
+    if (_debug) {
+        std::cerr << std::string(_depth * 2, ' ') << "ajnin: Reading list " << c
+                << "from " << s0 << '\n';
+    }
+    _depth++;
+
+    auto [s, flag] = expand(s0);
+    if (flag) throw std::runtime_error{ "Glob not allowed in " + s0 };
+
+    {
+        std::ifstream fin{ s };
+        while (!fin.eof()) {
+            list_item_t item;
+            std::stringstream ss{ [&]() {
+                S line;
+                std::getline(fin, line);
+                return line;
+            }() };
+            if (!fin.good()) break;
+            ss >> item.name;
+            if (!ss.good() || item.name.empty()) continue;
+            S field;
+            while (!ss.eof()) {
+                ss >> field;
+                if (!ss.good() || field.empty()) continue;
+                item.args.emplace_back(std::move(field));
+            }
+            _current_list->items.emplace_back(std::move(item));
+        }
+    }
+
+    _depth--;
+    show_list(*_current_list);
+    _current_list = nullptr;
+    return {};
 }
 
 antlrcpp::Any manager::visitListSearchStmt(TParser::ListSearchStmtContext *ctx) {

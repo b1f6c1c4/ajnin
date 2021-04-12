@@ -99,17 +99,22 @@ namespace parsing {
 
         [[nodiscard]] S expand_env(const S &s0) const;
         [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
+        void show_list(const list_t &list) const;
 
     public:
         explicit manager(bool debug = false, size_t limit = 15);
 
         antlrcpp::Any visitMain(TParser::MainContext *ctx) override;
 
+        antlrcpp::Any visitIfStmt(TParser::IfStmtContext *ctx) override;
+
         antlrcpp::Any visitRuleStmt(TParser::RuleStmtContext *ctx) override;
 
         antlrcpp::Any visitGroupStmt(TParser::GroupStmtContext *ctx) override;
 
         antlrcpp::Any visitListStmt(TParser::ListStmtContext *ctx) override;
+
+        antlrcpp::Any visitIncludeStmt(TParser::IncludeStmtContext *ctx) override;
 
         antlrcpp::Any visitListSearchStmt(TParser::ListSearchStmtContext *ctx) override;
 

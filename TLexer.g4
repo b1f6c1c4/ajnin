@@ -48,6 +48,12 @@ lexer grammar TLexer;
 KList: 'list';
 KRule: 'rule';
 KForeach: 'foreach';
+KInclude: 'include';
+KIf: 'if';
+KElse: 'else';
+
+IsEmpty: '-z';
+IsNonEmpty: '-n';
 
 ID: 'a'..'z' | 'A'..'Z';
 SubID: ID [0-9];

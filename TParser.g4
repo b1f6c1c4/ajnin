@@ -80,9 +80,17 @@ options {
 // Actual grammar start.
 main: (nl | stmt | literal)* EOF;
 
-stmt: listStmt | ruleStmt | pipeStmt | groupStmt;
+stmt: conditionalStmt | ruleStmt | includeStmt | listStmt | pipeStmt | groupStmt;
+
+stmts: OpenCurly nl stmt+ CloseCurly;
+
+conditionalStmt: ifStmt nl;
+
+ifStmt: KIf (IsEmpty | IsNonEmpty) Dollar SubID stmts (KElse (ifStmt | stmts))?;
 
 ruleStmt: KRule Token* (RuleAppend stage+ | assignment+) nl;
+
+includeStmt: KInclude KList ID ListSearch Path;
 
 listStmt: KList ID (listSearchStmt | listEnumStmt | listInlineEnumStmt);
 
@@ -94,7 +102,7 @@ listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
-groupStmt: (KForeach ID (Times ID)*)? OpenCurly nl stmt+ CloseCurly nl;
+groupStmt: (KForeach ID (Times ID)*)? stmts nl;
 
 pipeStmt: pipe nl;
 
