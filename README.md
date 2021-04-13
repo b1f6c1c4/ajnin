@@ -1,34 +1,37 @@
-# ajnin: Yet another Ninja generator
+# ajnin: A Beautiful Ninja generator
 
-Our ideology:
+Our top priority is beauty. Look at the DSL:
 
-- Only generate `build`s, not `rule`s.
-- Input should be in a intuitive & terse DSL.
-- Must be very fast.
-
-## Minimal example
-
-Write `build.ajnin`:
+`build.ajnin`:
 
 ```
-rule cc |= /usr/bin/cc
-list c ::= src/$$.c
-c {
-    (src/$c.c) --cc-- (build/$c.o) >>ld-- (build/a.out)
+rule cc |= (/usr/bin/cc)
+rule cc &cflags+=' -O3'
+
+(all) << {
+
+    list c := src/$$.c
+    foreach c {
+        (src/$c.c) --cc-- (build/$c.o) --ld-- (build/a.out)
+    }
+
 }
 ```
 
 Run: `ajnin -o build.ninja build.ajnin`:
 
 ```ninja
-build build/main.o: cc src/main.c | /usr/bin/cc
-build build/util.o: cc src/util.c | /usr/bin/cc
-build build/a.out: ld src/main.c src/util.o
+build all: phony build/a.out
+build build/a.out: ld build/a.o build/b.o
+build build/a.o: cc src/a.c | /usr/bin/cc
+    cflags =  -O3
+build build/b.o: cc src/b.c | /usr/bin/cc
+    cflags =  -O3
 ```
 
 ## Install
 
-Get the repo and use CMake.
+[git-get](https://github.com/b1f6c1c4/git-get) this repo and use CMake.
 You should have already learned how to use CMake and Ninja.
 
 ## Command line
