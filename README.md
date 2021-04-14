@@ -1,5 +1,7 @@
 # ajnin: A Beautiful Ninja generator
 
+![Demo](demo.gif)
+
 Our top priority is beauty. Look at the DSL:
 
 `build.ajnin`:
