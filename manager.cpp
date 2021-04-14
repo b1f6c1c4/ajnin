@@ -10,6 +10,7 @@ using namespace parsing;
 using namespace std::string_literals;
 
 C as_id(antlr4::tree::TerminalNode *s) {
+    if (!s) return '\0';
     return s->getText()[0];
 }
 
@@ -114,55 +115,157 @@ std::pair<S, bool> manager::expand(const S &s0) const {
         }
         auto a = (*_current)[s[i + 1]];
         if (!a) throw std::runtime_error{ "List "s + s[i + 1] + " not enumerated yet"};
-        auto st = [&]() {
+        auto [st, sz] = [&]() -> std::pair<S, size_t> {
             if (i != s.size() - 2 && std::isdigit(s[i + 2])) {
                 auto v = s[i + 2] - '0';
                 if (v >= a->args.size())
-                    return ""s;
-                return a->args[v];
+                    return { ""s, 3 };
+                return { a->args[v], 3 };
             }
-            return a->name;
+            return { a->name, 2 };
         }();
-        s.replace(i, 2, st);
-        i += st.size() - 1;
+        s.replace(i, sz, st);
+        i += st.size() - sz + 1;
     }
     return { s, flag };
 }
 
-void manager::show_list(const list_t &list) const {
-    if (!_debug) return;
+using P = std::filesystem::path;
+using PC = P::const_iterator;
+using DI = std::filesystem::directory_iterator;
 
-    std::cerr << std::string(_depth * 2, ' ') << "ajnin: List " << list.name
-              << " now is (" << list.items.size() << " items):\n";
-    size_t cnt{};
-    for (auto &it : list.items) {
-        std::cerr << std::string(_depth * 2, ' ') << "           ";
-        if (_debug_limit && cnt++ == _debug_limit) {
-            std::cerr << "...\n";
-            break;
+struct glob_t {
+    S l, r;
+    bool exact;
+    enum ans_t {
+        REJECT,
+        ACCEPT,
+        MATCH,
+    };
+    explicit glob_t(const S &str) {
+        auto pos = str.find("$$");
+        if (pos == std::string::npos) { // filename may NOT have glob.
+            l = str, r = {}, exact = true;
+            return;
         }
-        std::cerr << it.name;
-        if (!it.args.empty()) {
-            std::cerr << "[";
-            auto flag = false;
-            for (auto &f : it.args) {
-                if (flag) std::cerr << ",";
-                flag = true;
-                std::cerr << f;
-            }
-            std::cerr << ']';
-        }
-        std::cerr << '\n';
+        l = str.substr(0, pos);
+        r = str.substr(pos + 2);
+        exact = false;
+    }
+    [[nodiscard]] std::pair<ans_t, std::string> match(const S &str) const {
+        if (!str.starts_with(l)) return { REJECT, {} };
+        if (exact)
+            return { l.length() + r.length() > str.length() ? REJECT : ACCEPT, {} };
+        if (l.length() + r.length() >= str.length()) return { REJECT, {} };
+        if (!str.ends_with(r)) return { REJECT, {} };
+        return { MATCH, str.substr(l.length(), str.length() - l.length() - r.length()) };
+    }
+};
+
+// directory: actual dir that's being searched
+// start: head of pattern
+// finish: tail of pattern
+// filename: very tail of pattern
+static void glob_search(P directory, PC start, const PC &finish, const S &filename, std::function<bool(const S &)> cb) {
+    // proceed if there is no glob
+    while (start != finish && start->string().find("$$") == std::string::npos)
+        directory /= *start++;
+
+    DI it{ directory, std::filesystem::directory_options::skip_permission_denied };
+    if (it == DI{}) return;
+
+    if (start == finish) {
+        glob_t glob{ filename };
+        do {
+            if (it->is_directory()) continue;
+            if (auto [r, s] = glob.match(it->path().filename().string()); r != glob_t::REJECT)
+                if (cb(s)) return;
+        } while (++it != std::filesystem::directory_iterator());
+    } else {
+        glob_t glob{ start->string() };
+        do {
+            if (!it->is_directory()) continue;
+            auto [r, s] = glob.match(std::prev(it->path().end())->string());
+            if (r == glob_t::REJECT) continue;
+            if (r == glob_t::ACCEPT)
+                glob_search(it->path(), std::next(start), finish, filename, cb);
+            else
+                glob_search(it->path(), std::next(start), finish, filename, [&](const S &){ cb(s); return true; });
+        } while (++it != std::filesystem::directory_iterator());
     }
 }
 
-manager::manager(bool debug, size_t limit) : _debug{ debug }, _debug_limit{ limit } { }
+void manager::list_search(const S &s0) {
+    auto [s, flag] = expand(s0);
+    if (!flag) throw std::runtime_error{ "No glob in " + s0 };
+    auto id = s.find("$$");
+
+    std::filesystem::path p{ s };
+    auto ins = [&](const P &pa) {
+        auto p = pa.string();
+        auto str = s;
+        str.replace(id, 2, p);
+        _current_list->items.emplace_back(list_item_t{
+                std::move(p),
+                { std::move(str) }
+        });
+        return false;
+    };
+    if (p.is_absolute()) {
+        auto rp = p.parent_path().relative_path();
+        glob_search(p.root_path(), std::begin(rp), std::end(rp), p.filename().string(), ins);
+    } else {
+        auto pa = p.parent_path();
+        glob_search(std::filesystem::current_path(), std::begin(pa), std::end(pa), p.filename().string(), ins);
+    }
+}
+
+manager::manager(bool debug, bool quiet, size_t limit) : _debug{ debug }, _debug_limit{ limit }, _quiet{ quiet } { }
 
 antlrcpp::Any manager::visitMain(TParser::MainContext *ctx) {
     ctx_t next{ _current };
     _current = &next;
     visitChildren(ctx);
     _current = next.prev;
+    return {};
+}
+
+antlrcpp::Any manager::visitDebugStmt(TParser::DebugStmtContext *ctx) {
+    if (_quiet) return {};
+
+    if (auto c = as_id(ctx->ID()); c) {
+        if (!_lists.contains(c)) {
+            std::cerr << std::string(_depth * 2, ' ') << "ajnin: List " << c
+                      << " does not exist\n";
+        } else {
+            const auto &list = _lists.at(c);
+            std::cerr << std::string(_depth * 2, ' ') << "ajnin: List " << list.name
+                      << " now is (" << list.items.size() << " items):\n";
+            size_t cnt{};
+            for (auto &it : list.items) {
+                std::cerr << std::string(_depth * 2, ' ') << "           ";
+                std::cerr << it.name;
+                if (!it.args.empty()) {
+                    std::cerr << "[";
+                    auto flag = false;
+                    for (auto &f : it.args) {
+                        if (flag) std::cerr << ",";
+                        flag = true;
+                        std::cerr << f;
+                    }
+                    std::cerr << ']';
+                }
+                std::cerr << '\n';
+            }
+        }
+    }
+
+    return {};
+}
+
+antlrcpp::Any manager::visitClearStmt(TParser::ClearStmtContext *ctx) {
+    if (auto c = as_id(ctx->ID()); c)
+        _lists.erase(c);
     return {};
 }
 
@@ -304,83 +407,84 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
     return {};
 }
 
+antlrcpp::Any manager::visitListGroupStmt(TParser::ListGroupStmtContext *ctx) {
+    auto c = as_id(ctx->ID());
+    if (_lists.contains(c))
+        throw std::runtime_error{ "List "s + c + " already exists" };
+
+    auto s0 = ctx->OpenCurlyPath()->getText();
+    if (!s0.ends_with(" {\n")) throw std::runtime_error{ "Lexer messed up with  {\\n" };
+    s0.erase(s0.end() - 3, s0.end());
+
+    _current_list = &_lists[c];
+    _current_list->name = c;
+
+    list_search(s0);
+
+    ctx_t next{ _current };
+    _current = &next;
+    _depth++;
+    for (auto &item : _current_list->items) {
+        _current->ass[c] = &item;
+        for (auto &st : ctx->stmt())
+            st->accept(this);
+        _current->zrule = rule_t{};
+        _current->rules.clear();
+        _current->ideps.clear();
+    }
+    _depth--;
+    _current = next.prev;
+
+    _current_list = nullptr;
+    _lists.erase(c);
+    return {};
+}
+
 antlrcpp::Any manager::visitListStmt(TParser::ListStmtContext *ctx) {
     auto c = as_id(ctx->ID());
     _current_list = &_lists[c];
-    if (_debug) {
-        std::cerr << std::string(_depth * 2, ' ') << "ajnin: Setting list " << c << '\n';
-    }
+    _current_list->name = c;
     _depth++;
     visitChildren(ctx);
     _depth--;
-    show_list(*_current_list);
     _current_list = nullptr;
     return {};
 }
 
-using P = std::filesystem::path;
-using PC = P::const_iterator;
-using DI = std::filesystem::directory_iterator;
+template <typename Iter, typename Func>
+Iter remove_duplicates(Iter begin, Iter end, Func &&eq) {
+    auto it = begin;
+    Iter next;
+    for (; it != end; it = next) {
+        next = std::next(it);
+        if (next == end)
+            break;
+        end = std::remove_if(next, end, [&]<typename T>(T &&v) {
+            return eq(*it, std::forward<T>(v));
+        });
+    }
+    return end;
+}
 
-struct glob_t {
-    S l, r;
-    bool exact;
-    enum ans_t {
-        REJECT,
-        ACCEPT,
-        MATCH,
+antlrcpp::Any manager::visitListModifyStmt(TParser::ListModifyStmtContext *ctx) {
+    bool desc = ctx->KDesc();
+    auto cmp = [desc](const list_item_t &l, const list_item_t &r) {
+        if (desc)
+            return l.name > r.name;
+        return l.name < r.name;
     };
-    explicit glob_t(const S &str) {
-        auto pos = str.find("$$");
-        if (pos == std::string::npos) { // filename may NOT have glob.
-            l = str, r = {}, exact = true;
-            return;
-        }
-        l = str.substr(0, pos);
-        r = str.substr(pos + 2);
-        exact = false;
+    auto eq = [](const list_item_t &l, const list_item_t &r) {
+        return l.name == r.name;
+    };
+    auto &it = _current_list->items;
+    if (ctx->KSort()) {
+        std::stable_sort(it.begin(), it.end(), cmp);
+        if (ctx->KUnique())
+            it.erase(std::unique(it.begin(), it.end(), eq), it.end());
+    } else if (ctx->KUnique()) {
+        it.erase(remove_duplicates(it.begin(), it.end(), eq), it.end());
     }
-    [[nodiscard]] std::pair<ans_t, std::string> match(const S &str) const {
-        if (!str.starts_with(l)) return { REJECT, {} };
-        if (exact)
-            return { l.length() + r.length() > str.length() ? REJECT : ACCEPT, {} };
-        if (l.length() + r.length() >= str.length()) return { REJECT, {} };
-        if (!str.ends_with(r)) return { REJECT, {} };
-        return { MATCH, str.substr(l.length(), str.length() - l.length() - r.length()) };
-    }
-};
-
-// directory: actual dir that's being searched
-// start: head of pattern
-// finish: tail of pattern
-// filename: very tail of pattern
-void glob_search(P directory, PC start, const PC &finish, const S &filename, std::function<bool(const S &)> cb) {
-    // proceed if there is no glob
-    while (start != finish && start->string().find("$$") == std::string::npos)
-        directory /= *start++;
-
-    DI it{ directory, std::filesystem::directory_options::skip_permission_denied };
-    if (it == DI{}) return;
-
-    if (start == finish) {
-        glob_t glob{ filename };
-        do {
-            if (it->is_directory()) continue;
-            if (auto [r, s] = glob.match(it->path().filename().string()); r != glob_t::REJECT)
-                if (cb(s)) return;
-        } while (++it != std::filesystem::directory_iterator());
-    } else {
-        glob_t glob{ start->string() };
-        do {
-            if (!it->is_directory()) continue;
-            auto [r, s] = glob.match(std::prev(it->path().end())->string());
-            if (r == glob_t::REJECT) continue;
-            if (r == glob_t::ACCEPT)
-                glob_search(it->path(), std::next(start), finish, filename, cb);
-            else
-                glob_search(it->path(), std::next(start), finish, filename, [&](const S &){ cb(s); return true; });
-        } while (++it != std::filesystem::directory_iterator());
-    }
+    return {};
 }
 
 antlrcpp::Any manager::visitIncludeStmt(TParser::IncludeStmtContext *ctx) {
@@ -430,7 +534,6 @@ antlrcpp::Any manager::visitIncludeStmt(TParser::IncludeStmtContext *ctx) {
     }
 
     _depth--;
-    show_list(*_current_list);
     _current_list = nullptr;
     return {};
 }
@@ -440,21 +543,7 @@ antlrcpp::Any manager::visitListSearchStmt(TParser::ListSearchStmtContext *ctx) 
     if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
     s0.pop_back();
 
-    auto [s, flag] = expand(s0);
-    if (!flag) throw std::runtime_error{ "No glob in " + s0 };
-
-    std::filesystem::path p{ s };
-    auto ins = [&](const P &pa) {
-        _current_list->items.emplace_back(list_item_t{ pa.string() });
-        return false;
-    };
-    if (p.is_absolute()) {
-        auto rp = p.parent_path().relative_path();
-        glob_search(p.root_path(), std::begin(rp), std::end(rp), p.filename().string(), ins);
-    } else {
-        auto pa = p.parent_path();
-        glob_search(std::filesystem::current_path(), std::begin(pa), std::end(pa), p.filename().string(), ins);
-    }
+    list_search(s0);
     return {};
 }
 
@@ -462,7 +551,8 @@ antlrcpp::Any manager::visitListEnumStmtItem(TParser::ListEnumStmtItemContext *c
     list_item_t item;
     auto flag = false;
     for (auto t : ctx->ListItemToken()) {
-        auto st = expand_env(t->getText());
+        auto [st, glob] = expand(t->getText());
+        if (glob) throw std::runtime_error{ "Glob not allow in " + t->getText() };
         if (!flag)
             item.name = std::move(st), flag = true;
         else
@@ -473,15 +563,17 @@ antlrcpp::Any manager::visitListEnumStmtItem(TParser::ListEnumStmtItemContext *c
         s.emplace_back(std::move(item));
     else if (ctx->ListEnumRItem())
         s.erase(std::remove_if(s.begin(), s.end(), [&](const list_item_t &it) {
-            if (it.name != item.name) return false;
-            return std::equal(it.args.begin(), it.args.end(), item.args.begin());
+            return it.name == item.name;
         }), s.end());
     return {};
 }
 
 antlrcpp::Any manager::visitListInlineEnumStmt(TParser::ListInlineEnumStmtContext *ctx) {
-    for (auto t : ctx->ListItemToken())
-        _current_list->items.emplace_back(list_item_t{ expand_env(t->getText()) });
+    for (auto t : ctx->ListItemToken()) {
+        auto [s, glob] = expand(t->getText());
+        if (glob) throw std::runtime_error{ "Glob not allow in " + t->getText() };
+        _current_list->items.emplace_back(list_item_t{ std::move(s) });
+    }
     return {};
 }
 

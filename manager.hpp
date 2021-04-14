@@ -95,18 +95,22 @@ namespace parsing {
 
         mutable std::set<S> _env_notif;
 
-        const bool _debug{};
+        const bool _debug{}, _quiet{};
         const size_t _debug_limit{};
         size_t _depth{};
 
         [[nodiscard]] S expand_env(const S &s0) const;
         [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
-        void show_list(const list_t &list) const;
+        void list_search(const S &s0);
 
     public:
-        explicit manager(bool debug = false, size_t limit = 15);
+        explicit manager(bool debug = false, bool quiet = false, size_t limit = 15);
 
         antlrcpp::Any visitMain(TParser::MainContext *ctx) override;
+
+        antlrcpp::Any visitDebugStmt(TParser::DebugStmtContext *ctx) override;
+
+        antlrcpp::Any visitClearStmt(TParser::ClearStmtContext *ctx) override;
 
         antlrcpp::Any visitIfStmt(TParser::IfStmtContext *ctx) override;
 
@@ -114,7 +118,11 @@ namespace parsing {
 
         antlrcpp::Any visitGroupStmt(TParser::GroupStmtContext *ctx) override;
 
+        antlrcpp::Any visitListGroupStmt(TParser::ListGroupStmtContext *ctx) override;
+
         antlrcpp::Any visitListStmt(TParser::ListStmtContext *ctx) override;
+
+        antlrcpp::Any visitListModifyStmt(TParser::ListModifyStmtContext *ctx) override;
 
         antlrcpp::Any visitIncludeStmt(TParser::IncludeStmtContext *ctx) override;
 

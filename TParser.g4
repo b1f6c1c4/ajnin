@@ -80,9 +80,13 @@ options {
 // Actual grammar start.
 main: (nl | stmt | literal)* EOF;
 
-stmt: conditionalStmt | ruleStmt | includeStmt | listStmt | pipeStmt | groupStmt;
+stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt | includeStmt | listStmt | pipeStmt | groupStmt | listGroupStmt;
 
 stmts: OpenCurly nl stmt+ CloseCurly;
+
+debugStmt: KPrint KList ID nl;
+
+clearStmt: KClear KList ID nl;
 
 conditionalStmt: ifStmt nl;
 
@@ -92,17 +96,21 @@ ruleStmt: KRule Token* (RuleAppend stage+ | assignment+) nl;
 
 includeStmt: KInclude KList ID ListSearch Path;
 
-listStmt: KList ID (listSearchStmt | listEnumStmt | listInlineEnumStmt);
+listStmt: KList ID (listSearchStmt | listEnumStmt | listInlineEnumStmt | listModifyStmt);
+
+listModifyStmt: (KSort KDesc? KUnique? | KUnique) nl;
 
 listSearchStmt: ListSearch Path;
 
-listEnumStmt: ListEnum ListItemNL listEnumStmtItem+ nl;
+listEnumStmt: ListEnum ListItemNL listEnumStmtItem+;
 
 listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
 groupStmt: (KForeach ID (Times ID)* | stage (Single Token assignment*)? Append KAlso?)? stmts nl;
+
+listGroupStmt: KForeach KList ID ListSearch OpenCurlyPath nl? stmt+ CloseCurly nl;
 
 pipeStmt: pipe nl;
 
@@ -111,11 +119,12 @@ pipeGroup: Bra NL1? artifact+ Ket;
 artifact: (stage | pipe) Tilde? NL1?;
 
 pipe: (stage | pipeGroup) (operation alsoGroup*)+
-    | (stage | pipeGroup) (NL1 operation (NL1 alsoGroup)*)+;
+    | (stage | pipeGroup) NL1? operation (NL1? alsoGroup)*
+        (NL1 operation (NL1 alsoGroup)*)* (operation alsoGroup*)*;
 
 stage: Stage;
 
-operation: (Mult | Single) (Token assignment* Single)? stage;
+operation: (Mult | Single) (Token (assignment+ | (NL1 assignment)+ NL1)? Single)? stage;
 
 alsoGroup: KAlso Bra operation+ Ket
     | KAlso Bra (NL1 operation)+ NL1 Ket;

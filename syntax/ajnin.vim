@@ -14,13 +14,18 @@ syn match ajninComment "#.*$" contains=@Spell,ajninTodo
 syn region ajninLiteral start="^> " end=".*$" contains=ajninEnv
 syn region ajninLiteral start="^$> " end=".*$" contains=ajninEnv
 
-syn match ajninKeyword "^\s*rule\>" nextgroup=ajninRule skipwhite
-syn match ajninKeyword "^\s*list\>" nextgroup=ajninList skipwhite
-syn match ajninKeyword "^\s*foreach\>" nextgroup=ajninList skipwhite
-syn match ajninKeyword "^\s*include\>" nextgroup=ajninKeyword skipwhite
-syn match ajninKeyword "\<if\>" nextgroup=ajninKeyword skipwhite
-syn match ajninKeyword "\<else\>" nextgroup=ajninKeyword skipwhite
-syn match ajninKeyword "\<also\>" nextgroup=ajninRule skipwhite
+syn match ajninKeyword "\<rule\>" nextgroup=ajninRule skipwhite
+syn match ajninKeyword "\<list\>" nextgroup=ajninList skipwhite
+syn match ajninKeyword "\<foreach\>" nextgroup=ajninList skipwhite
+syn match ajninKeyword "\<include\>" nextgroup=ajninKeyword skipwhite
+syn match ajninKeyword "\<if\>" skipwhite
+syn match ajninKeyword "\<else\>" skipwhite
+syn match ajninKeyword "\<also\>" skipwhite
+syn match ajninKeyword "\<sort\>" skipwhite
+syn match ajninKeyword "\<uniq\>" skipwhite
+syn match ajninKeyword "\<desc\>" skipwhite
+syn match ajninKeyword "\<print\>" skipwhite
+syn match ajninKeyword "\<clear\>" skipwhite
 
 syn match ajninKeyword "\(if\s\+\)\@<=-n\>" nextgroup=ajninKeyword skipwhite
 syn match ajninKeyword "\(if\s\+\)\@<=-z\>" nextgroup=ajninKeyword skipwhite
@@ -42,14 +47,14 @@ syn match ajninListRef "\$[a-zA-Z][0-9]\?"
 syn match ajninEnv "\${[^}]*}" contained
 
 syn match ajninRule "\(rule\s\+\)\@<=[0-9a-zA-Z _-]\+"
-syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|>>\|<<\|&\)\@="
+syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|>>\|<<\|&\|$\)\@="
 syn match ajninRule ">>\(\s*[0-9a-zA-Z_-]\)\@!"
 syn match ajninRule "\([0-9a-zA-Z_-]\s*\)\@<!<<"
 
 syn match ajninAssignment "&[^+=]\++\?="
 
 syn region ajninPath start="(" end=")" contains=ajninListRef,ajninGlob,ajninEnv
-syn region ajninPath start="\(:=\)\@<=" end="$" contains=ajninListRef,ajninGlob,ajninEnv
+syn region ajninPath start="\(:=\)\@<=" end=" \({$\)\@=\|$" contains=ajninListRef,ajninGlob,ajninEnv
 
 syn region ajninSingleString start="'" skip="\$'" end="'" contains=ajninEnv
 syn region ajninDoubleString start="\"" skip="\$\"" end="\"" contains=ajninListRef,ajninEnv

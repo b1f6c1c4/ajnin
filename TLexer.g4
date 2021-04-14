@@ -52,6 +52,11 @@ KInclude: 'include';
 KIf: 'if';
 KElse: 'else';
 KAlso: 'also';
+KSort: 'sort';
+KUnique: 'uniq';
+KDesc: 'desc';
+KPrint: 'print';
+KClear: 'clear';
 
 IsEmpty: '-z';
 IsNonEmpty: '-n';
@@ -103,6 +108,7 @@ PrePathText: . -> more, mode(path);
 
 mode path;
 Path: NL1 -> mode(DEFAULT_MODE);
+OpenCurlyPath: ' {' NL1 -> mode(DEFAULT_MODE);
 PathText: . -> more;
 
 mode stage;
@@ -114,10 +120,10 @@ Assign: '+'? '=' -> mode(DEFAULT_MODE);
 AssignText: ~[+=] -> more;
 
 mode listItem;
-ListItemNL: '\r'? '\n' -> mode(DEFAULT_MODE);
+ListItemNL: NL1 -> mode(DEFAULT_MODE);
 ListItemToken: ~[ \t\r\n]+;
 ListItemWS: [ \t]+ -> skip;
 
 mode literal;
-LiteralNL: '\r'? '\n' -> mode(DEFAULT_MODE);
+LiteralNL: NL1 -> mode(DEFAULT_MODE);
 LiteralText: . -> more;
