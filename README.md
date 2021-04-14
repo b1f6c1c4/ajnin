@@ -1,4 +1,4 @@
-# ajnin: A Beautiful Ninja generator
+# ajnin [ˈajn in]: A Beautiful Ninja generator
 
 ![Demo](demo.gif)
 
