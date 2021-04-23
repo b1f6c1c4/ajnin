@@ -25,9 +25,12 @@
 using namespace parsing;
 using namespace std::string_literals;
 
-antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
-    _current_build = nullptr;
-    ctx->pipe()->accept(this);
+void manager::art_to_dep() {
+    if (_current_build->deps.empty() && _current_build->ideps.empty())
+        _current_build->deps.emplace_back(std::move(_current_artifact));
+}
+
+void manager::append_artifact() {
     for (auto ptr = _current; ptr; ptr = ptr->prev)
         if (ptr->app) {
             auto orig_artifact = _current_artifact;
@@ -42,6 +45,13 @@ antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
             if (ptr->app_also)
                 _current_artifact = orig_artifact;
         }
+}
+
+antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
+    _current_build = nullptr;
+    visitChildren(ctx);
+    if (!ctx->templateInst())
+        append_artifact();
     _current_build = nullptr;
     return {};
 }
@@ -96,9 +106,7 @@ antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
 // _current_build will be replaced by a new empty value.
 // _current_artifact will be set.
 antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
-    // This handles the case when operation follows immediately after stage
-    if (_current_build->deps.empty() && _current_build->ideps.empty())
-        _current_build->deps.emplace_back(std::move(_current_artifact));
+    art_to_dep();
 
     rule_t rule{};
     _current_rule = &rule;
@@ -150,7 +158,7 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
     if (append)
         _current_value = (*_current)[rule].vars[as] + _current_value;
 
-    _current_rule->vars[as] = _current_value;
+    _current_rule->vars[as] = std::move(_current_value);
     return {};
 }
 
@@ -196,6 +204,75 @@ antlrcpp::Any manager::visitValue(TParser::ValueContext *ctx) {
     throw std::runtime_error{ "Invalid value" };
 }
 
+// _current_artifact must be valid.
+// _current_build will be cleared.
+// _current_artifact will be cleared.
 antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
-    return TParserBaseVisitor::visitTemplateInst(ctx);
+    auto s0 = ctx->TemplateName()->getText();
+    if (!s0.starts_with('<') || !s0.ends_with('>')) throw std::runtime_error{ "Lexer messed up with <>" };
+    s0 = s0.substr(1, s0.length() - 2);
+
+    if (!_templates.contains(s0))
+        throw std::runtime_error{ "Template " + s0 + " not found." };
+
+    auto tmpl = _templates.at(s0);
+    SS args;
+    for (auto v : ctx->value()) {
+        v->accept(this);
+        args.emplace_back(std::move(_current_value));
+    }
+
+    auto spatch = [&](std::string &s) {
+        for (size_t i{}; i < s.size(); i++) {
+            if (s[i] != '$') continue;
+            if (i == s.size() - 1) throw std::runtime_error{ "Invalid dep " + s0 };
+            if (tmpl.par != s[i + 1]) continue;
+            auto [st, sz] = [&]() -> std::pair<S, size_t> {
+                if (i != s.size() - 2 && std::isdigit(s[i + 2])) {
+                    auto v = s[i + 2] - '0';
+                    if (v > args.size())
+                        throw std::runtime_error{ "Parameter "s + tmpl.par + " out of range" };
+                    return { args[v + 1], 3 };
+                }
+                return { args[0], 2 };
+            }();
+            s.replace(i, sz, st);
+            i += st.size() - 1;
+        }
+    };
+    auto patch = [&](build_t b) {
+        for (auto &s : b.deps)
+            if (s.empty()) s = _current_artifact;
+            else spatch(s);
+        Ss next;
+        for (const auto &s : b.ideps)
+            if (s.empty()) {
+                next.emplace(_current_artifact);
+            } else {
+                auto ss = s;
+                spatch(ss);
+                next.emplace(std::move(ss));
+            }
+        b.ideps = std::move(next);
+        for (auto &[k, v] : b.vars)
+            spatch(v);
+        spatch(b.art);
+        return b;
+    };
+
+    for (auto &[k, v] : tmpl.builds) {
+        auto &&pv = patch(*v);
+        auto &pb = _builds[pv.art]; // note that art is also patched
+        if (!pb) pb = std::make_shared<build_t>();
+        *pb += std::move(pv);
+    }
+
+    for (auto &art : tmpl.arts) {
+        _current_artifact = art;
+        append_artifact();
+    }
+
+    _current_artifact = {};
+    _current_build = nullptr;
+    return {};
 }

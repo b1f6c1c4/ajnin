@@ -64,6 +64,20 @@ std::filesystem::path manager::ctx_t::get_cwd() const {
     return prev->get_cwd();
 }
 
+manager::ctx_t manager::ctx_t::save() const {
+    if (!prev) return *this;
+    auto ctx = *this;
+    {
+        auto &&p = prev->save();
+        ctx.ass.merge(p.ass);
+        ctx.zrule += p.zrule;
+        for (auto &[k, v] : p.rules)
+            ctx.rules[k] += v;
+        ctx.ideps.merge(p.ideps);
+    }
+    return ctx;
+}
+
 build_t &build_t::operator+=(build_t &&o) {
     if (art.empty())
         return *this = std::move(o);
@@ -77,6 +91,25 @@ build_t &build_t::operator+=(build_t &&o) {
         if (std::find(deps.begin(), deps.end(), dep) == deps.end())
             deps.emplace_back(std::move(dep));
     o.deps.clear();
+    return *this;
+}
+
+manager::template_t &manager::template_t::operator+=(manager::template_t &&o) {
+    if (builds.empty())
+        return *this = std::move(o);
+
+    if (name != o.name)
+        throw std::runtime_error{ "Conflict name" };
+    if (par != o.par)
+        throw std::runtime_error{ "Conflict par for " + name };
+
+    arts.merge(o.arts);
+
+    for (auto &[k, v] : o.builds) {
+        auto &pb = builds[k];
+        if (!pb) pb = std::make_shared<build_t>();
+        *pb += std::move(*v);
+    }
     return *this;
 }
 
@@ -104,7 +137,7 @@ S manager::expand_env(const S &s0) const {
             case '/': {
                 auto p = _current->get_cwd().string();
                 s.replace(i, 1, p);
-                i += p.size();
+                i += p.size() - 1;
                 continue;
             }
             case '$':
@@ -142,9 +175,15 @@ std::pair<S, bool> manager::expand(const S &s0) const {
             i++;
             continue;
         }
-        auto a = (*_current)[s[i + 1]];
-        if (!a) throw std::runtime_error{ "List "s + s[i + 1] + " not enumerated yet"};
+        if (_current_template_par == s[i + 1]) {
+            if (i != s.size() - 2 && std::isdigit(s[i + 2]))
+                i++;
+            i++;
+            continue;
+        }
         auto [st, sz] = [&]() -> std::pair<S, size_t> {
+            auto a = (*_current)[s[i + 1]];
+            if (!a) throw std::runtime_error{ "List "s + s[i + 1] + " not enumerated yet"};
             if (i != s.size() - 2 && std::isdigit(s[i + 2])) {
                 auto v = s[i + 2] - '0';
                 if (v >= a->args.size())
@@ -154,7 +193,7 @@ std::pair<S, bool> manager::expand(const S &s0) const {
             return { a->name, 2 };
         }();
         s.replace(i, sz, st);
-        i += st.size() - sz + 1;
+        i += st.size() - 1;
     }
     return { s, flag };
 }

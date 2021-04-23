@@ -17,9 +17,7 @@
 
 #include "manager.hpp"
 
-#include <cctype>
 #include <cstring>
-#include <filesystem>
 #include <iostream>
 #include <stack>
 #include "TLexer.h"
@@ -375,5 +373,24 @@ antlrcpp::Any manager::visitListInlineEnumStmt(TParser::ListInlineEnumStmtContex
 }
 
 antlrcpp::Any manager::visitTemplateStmt(TParser::TemplateStmtContext *ctx) {
-    return TParserBaseVisitor::visitTemplateStmt(ctx);
+    if (_current_rule || !_current_artifact.empty() || _current_build)
+        throw std::runtime_error{ "Invalid state when entering template" };
+
+    template_t tmp{ ctx->Token()->getText(), as_id(ctx->ID()) };
+    auto prev_builds = std::move(_builds);
+
+    _current_template_par = tmp.par;
+    _current_artifact = "";
+    _current_build = _current->make_build();
+
+    visitChildren(ctx);
+
+    _current_build.reset();
+    _current_artifact = "";
+    _current_template_par = '\0';
+
+    tmp.builds = std::move(_builds);
+    _templates[tmp.name] += std::move(tmp);
+    _builds = std::move(prev_builds);
+    return {};
 }

@@ -54,7 +54,7 @@ namespace parsing {
     struct list_t {
         C name;
         std::deque<list_item_t> items;
-        CS deps;
+        // CS deps;
     };
 
     struct build_t {
@@ -83,10 +83,23 @@ namespace parsing {
             [[nodiscard]] rule_t operator[](const S &s) const;
             [[nodiscard]] pbuild_t make_build() const;
             [[nodiscard]] std::filesystem::path get_cwd() const;
+
+            // Note: Only ass, zrule, rules, ideps are saved.
+            [[nodiscard]] ctx_t save() const;
+        };
+
+        struct template_t {
+            S name;
+            C par;
+            MS<pbuild_t> builds;
+            Ss arts;
+
+            template_t &operator+=(template_t &&o);
         };
 
         MC<list_t> _lists;
         MS<pbuild_t> _builds;
+        MS<template_t> _templates;
 
         ctx_t *_current{};
         list_t *_current_list{};
@@ -94,6 +107,7 @@ namespace parsing {
         rule_t *_current_rule{};
         S _current_artifact{};
         S _current_value{};
+        C _current_template_par{};
 
         SS _prolog, _epilog;
 
@@ -108,6 +122,8 @@ namespace parsing {
         [[nodiscard]] static S expand_quote(S s, char c);
         [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
         void list_search(const S &s0);
+        void art_to_dep();
+        void append_artifact();
 
     public:
         explicit manager(bool debug = false, bool quiet = false, size_t limit = 15);

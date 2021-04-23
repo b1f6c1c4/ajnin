@@ -81,7 +81,8 @@ options {
 main: (nl | stmt | literal)* EOF;
 
 stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt
-    | includeStmt | listStmt | pipeStmt | groupStmt | listGroupStmt
+    | includeStmt | listStmt | pipeStmt
+    | groupStmt | listGroupStmt
     | fileStmt | templateStmt;
 
 stmts: OpenCurly nl stmt+ CloseCurly;
@@ -114,22 +115,21 @@ groupStmt: (KForeach ID (Times ID)* | stage (Single Token assignment*)? Append K
 
 listGroupStmt: KForeach KList ID ListSearch OpenCurlyPath nl? stmt+ CloseCurly nl;
 
-pipeStmt: pipe (NL1? templateInst)? nl;
+pipeStmt: (pipe | stage) NL1? templateInst nl;
 
 pipeGroup: Bra NL1? artifact+ Ket;
 
 artifact: (stage | pipe) Tilde? NL1?;
 
-pipe: (stage | pipeGroup) (operation alsoGroup*)+
-    | (stage | pipeGroup) NL1? operation (NL1? alsoGroup)*
-        (NL1 operation (NL1 alsoGroup)*)* (operation alsoGroup*)*;
+pipe: (stage | pipeGroup) operAlsoOper;
 
 stage: Stage;
 
+operAlsoOper: NL1? operation (NL1? (alsoGroup NL1?)* operation)*;
+
 operation: (Mult | Single) (Token (assignment+ | (NL1 assignment)+ NL1)? Single)? stage;
 
-alsoGroup: KAlso Bra operation+ Ket
-    | KAlso Bra (NL1 operation)+ NL1 Ket;
+alsoGroup: KAlso Bra operAlsoOper Ket;
 
 assignment: Assign value?;
 
@@ -143,7 +143,7 @@ epilog: LiteralEpilog LiteralNL;
 
 fileStmt: KInclude KFile ListSearch Path;
 
-templateStmt: KTemplate TemplateName KList ID NL1 (operation alsoGroup*)+;
+templateStmt: KTemplate Token KList ID NL1 operAlsoOper;
 
 templateInst: TemplateName value+;
 
