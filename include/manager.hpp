@@ -103,7 +103,9 @@ namespace parsing {
         const size_t _debug_limit{};
         size_t _depth{};
 
+        [[nodiscard]] static C as_id(antlr4::tree::TerminalNode *s);
         [[nodiscard]] S expand_env(const S &s0) const;
+        [[nodiscard]] static S expand_quote(S s, char c);
         [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
         void list_search(const S &s0);
 

@@ -48,7 +48,13 @@ include_directories(${ANTLR_TLexer_OUTPUT_DIR})
 include_directories(${ANTLR_TParser_OUTPUT_DIR})
 include_directories(${ANTLR_TVisitor_OUTPUT_DIR})
 
+include_directories(include)
+
 add_executable(ajnin main.cpp
+        manager/aux.cpp
+        manager/io.cpp
+        manager/non-build.cpp
+        manager/build.cpp
         ${ANTLR_TLexer_CXX_OUTPUTS}
-        ${ANTLR_TParser_CXX_OUTPUTS} manager.cpp manager.hpp)
+        ${ANTLR_TParser_CXX_OUTPUTS})
 target_link_libraries(ajnin antlr4_static)
