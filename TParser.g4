@@ -115,7 +115,7 @@ groupStmt: (KForeach ID (Times ID)* | stage (Single Token assignment*)? Append K
 
 listGroupStmt: KForeach KList ID ListSearch OpenCurlyPath nl? stmt+ CloseCurly nl;
 
-pipeStmt: (pipe | stage) NL1? templateInst nl;
+pipeStmt: (pipe | stage) (NL1? templateInst)? nl;
 
 pipeGroup: Bra NL1? artifact+ Ket;
 
@@ -143,7 +143,7 @@ epilog: LiteralEpilog LiteralNL;
 
 fileStmt: KInclude KFile ListSearch Path;
 
-templateStmt: KTemplate Token KList ID NL1 operAlsoOper;
+templateStmt: KTemplate Token KList ID NL1 operAlsoOper (NL1? templateInst)? nl;
 
 templateInst: TemplateName value+;
 

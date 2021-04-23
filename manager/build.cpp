@@ -138,7 +138,9 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 antlrcpp::Any manager::visitAlsoGroup(TParser::AlsoGroupContext *ctx) {
     auto orig_artifact = _current_artifact;
     visitChildren(ctx);
-    _current_artifact = orig_artifact;
+    if (_current_template)
+        _current_template->arts.emplace(std::move(_current_artifact));
+    _current_artifact = std::move(orig_artifact);
     return {};
 }
 
@@ -166,6 +168,10 @@ antlrcpp::Any manager::visitValue(TParser::ValueContext *ctx) {
     if (ctx->ID()) {
         auto id = ctx->ID()->getText();
         if (id.size() != 1) throw std::runtime_error{ "Lexer messed up with ID" };
+        if (_current_template && _current_template->par == id[0]) {
+            _current_value = '$' + id;
+            return {};
+        }
         auto a = (*_current)[id[0]];
         if (!a) return {};
         _current_value = a->name;
@@ -174,6 +180,10 @@ antlrcpp::Any manager::visitValue(TParser::ValueContext *ctx) {
     if (ctx->SubID()) {
         auto id = ctx->SubID()->getText();
         if (id.size() != 2) throw std::runtime_error{ "Lexer messed up with SubID" };
+        if (_current_template && _current_template->par == id[0]) {
+            _current_value = '$' + id;
+            return {};
+        }
         auto a = (*_current)[id[0]];
         if (!a) return {};
         auto v = id[1] - '0';
@@ -207,22 +217,15 @@ antlrcpp::Any manager::visitValue(TParser::ValueContext *ctx) {
 // _current_artifact must be valid.
 // _current_build will be cleared.
 // _current_artifact will be cleared.
-antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
-    auto s0 = ctx->TemplateName()->getText();
-    if (!s0.starts_with('<') || !s0.ends_with('>')) throw std::runtime_error{ "Lexer messed up with <>" };
-    s0 = s0.substr(1, s0.length() - 2);
-
+void manager::apply_template(const S &s0, const SS &args) {
+    if (_current_template)
+        throw std::runtime_error{ "Invalid state when apply_template." };
     if (!_templates.contains(s0))
         throw std::runtime_error{ "Template " + s0 + " not found." };
 
-    auto tmpl = _templates.at(s0);
-    SS args;
-    for (auto v : ctx->value()) {
-        v->accept(this);
-        args.emplace_back(std::move(_current_value));
-    }
+    auto &tmpl = _templates.at(s0);
 
-    auto spatch = [&](std::string &s) {
+    auto spatch = [&](std::string s) {
         for (size_t i{}; i < s.size(); i++) {
             if (s[i] != '$') continue;
             if (i == s.size() - 1) throw std::runtime_error{ "Invalid dep " + s0 };
@@ -239,24 +242,18 @@ antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
             s.replace(i, sz, st);
             i += st.size() - 1;
         }
+        return std::move(s);
     };
     auto patch = [&](build_t b) {
         for (auto &s : b.deps)
-            if (s.empty()) s = _current_artifact;
-            else spatch(s);
+            s = s.empty() ? s = _current_artifact : spatch(s);
         Ss next;
         for (const auto &s : b.ideps)
-            if (s.empty()) {
-                next.emplace(_current_artifact);
-            } else {
-                auto ss = s;
-                spatch(ss);
-                next.emplace(std::move(ss));
-            }
+            next.emplace(s.empty() ? _current_value : spatch(s));
         b.ideps = std::move(next);
         for (auto &[k, v] : b.vars)
-            spatch(v);
-        spatch(b.art);
+            v = spatch(v);
+        b.art = spatch(b.art);
         return b;
     };
 
@@ -267,12 +264,46 @@ antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
         *pb += std::move(pv);
     }
 
+    SS na;
+    for (auto &a : tmpl.next_args)
+        na.emplace_back(spatch(a));
+
     for (auto &art : tmpl.arts) {
-        _current_artifact = art;
-        append_artifact();
+        _current_artifact = spatch(art);
+        if (!tmpl.next.empty())
+            apply_template(tmpl.next, na);
+        else
+            append_artifact();
     }
 
     _current_artifact = {};
     _current_build = nullptr;
+}
+
+// When _current_template is nullptr:
+//    _current_artifact must be valid.
+//    _current_build will be cleared.
+//    _current_artifact will be cleared.
+// Otherwise:
+//    _current_artifact will not change.
+//    _current_build will not change.
+antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
+    auto s0 = ctx->TemplateName()->getText();
+    if (!s0.starts_with('<') || !s0.ends_with('>')) throw std::runtime_error{ "Lexer messed up with <>" };
+    s0 = s0.substr(1, s0.length() - 2);
+
+    SS args;
+    for (auto v : ctx->value()) {
+        v->accept(this);
+        args.emplace_back(std::move(_current_value));
+    }
+
+    if (!_current_template) {
+        apply_template(s0, args);
+    } else {
+        _current_template->next = std::move(s0);
+        _current_template->next_args = std::move(args);
+    }
+
     return {};
 }

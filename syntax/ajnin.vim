@@ -48,13 +48,13 @@ syn match ajninListRef "\$[a-zA-Z][0-9]\?"
 
 syn match ajninEnv "\${[^}]*}" contained
 
-syn match ajninRule "\(rule\s\+\)\@<=[0-9a-zA-Z _-]\+"
-syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|>>\|<<\|&\|$\)\@="
-syn match ajninRule ">>\(\s*[0-9a-zA-Z_-]\)\@!"
-syn match ajninRule "\([0-9a-zA-Z_-]\s*\)\@<!<<"
+syn match ajninRule "\(rule\s\+\)\@<=[0-9a-zA-Z ._-]\+"
+syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z._-]\+\(--\|>>\|<<\|&\|$\)\@="
+syn match ajninRule ">>\(\s*[0-9a-zA-Z._-]\)\@!"
+syn match ajninRule "\([0-9a-zA-Z._-]\s*\)\@<!<<"
 
-syn match ajninTemplate "\(template\s\+\)\@<=[0-9a-zA-Z_-]\+"
-syn match ajninTemplate "<[0-9a-zA-Z_-]\+>"
+syn match ajninTemplate "\(template\s\+\)\@<=[0-9a-zA-Z._-]\+"
+syn match ajninTemplate "<[0-9a-zA-Z._-]\+>"
 
 syn match ajninAssignment "&[^+=]\++\?="
 

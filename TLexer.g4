@@ -79,8 +79,8 @@ Single: '--';
 Append: '<<';
 
 fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
-Token: LETTER ((LETTER | '0'..'9' | '_' | '-')* (LETTER | '0'..'9'))?;
-TemplateName: '<' LETTER ((LETTER | '0'..'9' | '_' | '-')* (LETTER | '0'..'9'))? '>';
+Token: LETTER ((LETTER | '0'..'9' | '_' | '-' | '.')* (LETTER | '0'..'9'))?;
+TemplateName: '<' LETTER ((LETTER | '0'..'9' | '_' | '-' | '.')* (LETTER | '0'..'9'))? '>';
 
 OpenCurly: '{';
 CloseCurly: '}';

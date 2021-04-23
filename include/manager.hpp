@@ -93,6 +93,8 @@ namespace parsing {
             C par;
             MS<pbuild_t> builds;
             Ss arts;
+            S next;
+            SS next_args;
 
             template_t &operator+=(template_t &&o);
         };
@@ -107,7 +109,7 @@ namespace parsing {
         rule_t *_current_rule{};
         S _current_artifact{};
         S _current_value{};
-        C _current_template_par{};
+        template_t *_current_template{};
 
         SS _prolog, _epilog;
 
@@ -124,6 +126,7 @@ namespace parsing {
         void list_search(const S &s0);
         void art_to_dep();
         void append_artifact();
+        void apply_template(const S &s0, const SS &args);
 
     public:
         explicit manager(bool debug = false, bool quiet = false, size_t limit = 15);

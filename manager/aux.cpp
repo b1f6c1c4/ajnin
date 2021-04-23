@@ -175,7 +175,7 @@ std::pair<S, bool> manager::expand(const S &s0) const {
             i++;
             continue;
         }
-        if (_current_template_par == s[i + 1]) {
+        if (_current_template && _current_template->par == s[i + 1]) {
             if (i != s.size() - 2 && std::isdigit(s[i + 2]))
                 i++;
             i++;

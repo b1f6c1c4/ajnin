@@ -379,15 +379,16 @@ antlrcpp::Any manager::visitTemplateStmt(TParser::TemplateStmtContext *ctx) {
     template_t tmp{ ctx->Token()->getText(), as_id(ctx->ID()) };
     auto prev_builds = std::move(_builds);
 
-    _current_template_par = tmp.par;
+    _current_template = &tmp;
     _current_artifact = "";
     _current_build = _current->make_build();
 
     visitChildren(ctx);
+    tmp.arts.emplace(std::move(_current_artifact));
 
     _current_build.reset();
     _current_artifact = "";
-    _current_template_par = '\0';
+    _current_template = nullptr;
 
     tmp.builds = std::move(_builds);
     _templates[tmp.name] += std::move(tmp);

@@ -9,7 +9,7 @@ let b:did_indent = 1
 setlocal nolisp
 setlocal autoindent
 setlocal indentexpr=AjninIndent(v:lnum)
-setlocal indentkeys+=0=},0=],-,>,<o>,&
+setlocal indentkeys+=0=},0=],-,>,<o>,&,=
 
 if exists('*AjninIndent')
   finish
@@ -27,27 +27,55 @@ function! AjninIndent(lnum)
 
   let l:ind = l:previ
 
+  " [ { ::=
+  "     <text>
   if l:prevl =~ '\[\s*$' || l:prevl =~ '{' || l:prevl =~ '::=\s*$'
     let l:ind += shiftwidth()
   endif
+  "     += -=
+  " <text>
   if l:prevl =~ '^\s*[+-]=' && l:thisl !~ '^\s*[+-]='
     let l:ind -= shiftwidth()
   endif
-  if l:prevl =~ '^\s*\(\]\s*\)\?\(--\|>>\).*)\s*$'
+  "         --rule-- (stage)]
+  " <text>
+  if l:prevl =~ '^\s*\(--\|>>\|<\).*)\s*]\s*$'
+    let l:ind -= 2 * shiftwidth()
+  endif
+  "     --rule-- (stage)
+  " <text>
+  if l:prevl =~ '^\s*\(--\|>>\).*)\s*$'
     let l:ind -= shiftwidth()
   endif
+  "     <tmpl>
+  " <text>
+  if l:prevl =~ '^\s*<.*>'
+    let l:ind -= shiftwidth()
+  endif
+  "     also[--rule-- (stage)]
+  " <text>
   if l:prevl =~ '^\s*also.*\]\s*$'
     let l:ind -= shiftwidth()
   endif
+  "     also[
+  "         <text>
+  if l:prevl =~ '^\s*also\s*[\s*$'
+    let l:ind -= shiftwidth()
+  endif
+  "         &var=
+  "     --rule--
   if l:prevl =~ '^\s*\(&\)'
     let l:ind -= shiftwidth()
     if l:thisl =~ '^\s*\(--\)'
       let l:ind -= shiftwidth()
     endif
   endif
-  if l:thisl =~ '^\s*\(--\|>>\|also\|&\)'
+  " <text>
+  "     --rule-- <tmpl> also[ &var=
+  if l:thisl =~ '^\s*\(--\|>>\|<\|also\|&\)'
     let l:ind += shiftwidth()
   endif
+  " ] }
   if l:thisl =~ '^\s*[\]}]'
     let l:ind -= shiftwidth()
   endif
