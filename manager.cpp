@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <stack>
+#include "TLexer.h"
 
 using namespace parsing;
 using namespace std::string_literals;
@@ -46,6 +48,12 @@ pbuild_t manager::ctx_t::make_build() const {
     return pb;
 }
 
+std::filesystem::path manager::ctx_t::get_cwd() const {
+    if (cwd.has_value()) return cwd.value();
+    if (!prev) throw std::runtime_error{ "Invalid ctx: No cwd" };
+    return prev->get_cwd();
+}
+
 build_t &build_t::operator+=(build_t &&o) {
     if (art.empty())
         return *this = std::move(o);
@@ -78,6 +86,12 @@ S manager::expand_env(const S &s0) const {
         if (s[i] != '$') continue;
         if (i == s.size() - 1) throw std::runtime_error{ "Invalid string " + s0 };
         switch (s[i + 1]) {
+            case '/': {
+                auto p = _current->get_cwd().string();
+                s.replace(i, 1, p);
+                i += p.size();
+                continue;
+            }
             case '$':
             default:
                 i++;
@@ -96,7 +110,7 @@ S manager::expand_env(const S &s0) const {
             st = "";
         }
         s.replace(i, e - i + 1, st);
-        i = e + 1;
+        i += std::strlen(st) - 1;
     }
     return s;
 }
@@ -692,14 +706,30 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
     auto append = as[as.size() - 2] == '+';
     as = as.substr(1, as.length() - (append ? 3 : 2));
 
-    S str;
+    if (!ctx->value()) {
+        _current_rule->vars.erase(as);
+        return {};
+    }
+
+    ctx->value()->accept(this);
+    auto &rule = _current_rule->name;
+    if (append)
+        _current_value = (*_current)[rule].vars[as] + _current_value;
+
+    _current_rule->vars[as] = _current_value;
+    return {};
+}
+
+antlrcpp::Any manager::visitValue(TParser::ValueContext *ctx) {
     if (ctx->ID()) {
         auto id = ctx->ID()->getText();
         if (id.size() != 1) throw std::runtime_error{ "Lexer messed up with ID" };
         auto a = (*_current)[id[0]];
         if (!a) return {};
-        str = a->name;
-    } else if (ctx->SubID()) {
+        _current_value = a->name;
+        return {};
+    }
+    if (ctx->SubID()) {
         auto id = ctx->SubID()->getText();
         if (id.size() != 2) throw std::runtime_error{ "Lexer messed up with SubID" };
         auto a = (*_current)[id[0]];
@@ -707,32 +737,29 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
         auto v = id[1] - '0';
         if (v >= a->args.size())
             return {};
-        str = a->args[v];
-    } else if (ctx->SingleString()) {
+        _current_value = a->args[v];
+        return {};
+    }
+    if (ctx->SingleString()) {
         auto s0 = ctx->SingleString()->getText();
         if (!s0.starts_with('\'') || !s0.ends_with('\'')) throw std::runtime_error{ "Lexer messed up with ''" };
         s0 = s0.substr(1, s0.size() - 2);
         s0 = expand_quote(s0, '\'');
         s0 = expand_env(s0);
-        str = std::move(s0);
-    } else if (ctx->DoubleString()) {
+        _current_value = std::move(s0);
+        return {};
+    }
+    if (ctx->DoubleString()) {
         auto s0 = ctx->DoubleString()->getText();
         if (!s0.starts_with('"') || !s0.ends_with('"')) throw std::runtime_error{ "Lexer messed up with \"\"" };
         s0 = s0.substr(1, s0.size() - 2);
         s0 = expand_quote(s0, '"');
         auto [s, glob] = expand(s0);
         if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
-        str = std::move(s);
-    } else {
-        _current_rule->vars.erase(as);
+        _current_value = std::move(s);
+        return {};
     }
-
-    auto &rule = _current_rule->name;
-    if (append)
-        str = (*_current)[rule].vars[as] + str;
-
-    _current_rule->vars[as] = str;
-    return {};
+    throw std::runtime_error{ "Invalid value" };
 }
 
 antlrcpp::Any manager::visitProlog(TParser::PrologContext *ctx) {
@@ -751,6 +778,60 @@ antlrcpp::Any manager::visitEpilog(TParser::EpilogContext *ctx) {
 
     _epilog.emplace_back(expand_env(s0));
     return {};
+}
+
+antlrcpp::Any manager::visitFileStmt(TParser::FileStmtContext *ctx) {
+    auto s0 = ctx->Path()->getText();
+    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+    s0.pop_back();
+
+    auto [s, flag] = expand(s0);
+    if (flag) throw std::runtime_error{ "Glob not allowed in " + s0 };
+
+    load_file(s);
+
+    return {};
+}
+
+antlrcpp::Any manager::visitTemplateStmt(TParser::TemplateStmtContext *ctx) {
+    return TParserBaseVisitor::visitTemplateStmt(ctx);
+}
+
+antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
+    return TParserBaseVisitor::visitTemplateInst(ctx);
+}
+
+void manager::parse(antlr4::CharStream &is) {
+    using namespace antlr4;
+    TLexer lexer{ &is };
+    CommonTokenStream tokens{ &lexer };
+    tokens.fill();
+    TParser parser{ &tokens };
+    auto res = parser.main();
+    if (parser.getNumberOfSyntaxErrors())
+        throw std::runtime_error{ "Syntax error detected." };
+    res->accept(this);
+}
+
+
+void manager::load_stream(std::istream &is) {
+    antlr4::ANTLRInputStream s{ is };
+    ctx_t next{ _current };
+    _current = &next;
+    _current->cwd = std::filesystem::current_path();
+    parse(s);
+    _current = next.prev;
+}
+
+void manager::load_file(const std::string &str) {
+    antlr4::ANTLRFileStream s{};
+    s.loadFromFile(str);
+    ctx_t next{ _current };
+    _current = &next;
+    _current->cwd = str;
+    _current->cwd = _current->cwd->parent_path().lexically_normal();
+    parse(s);
+    _current = next.prev;
 }
 
 std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {

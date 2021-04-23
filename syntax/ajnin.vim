@@ -26,6 +26,8 @@ syn match ajninKeyword "\<uniq\>" skipwhite
 syn match ajninKeyword "\<desc\>" skipwhite
 syn match ajninKeyword "\<print\>" skipwhite
 syn match ajninKeyword "\<clear\>" skipwhite
+syn match ajninKeyword "\<file\>" skipwhite
+syn match ajninKeyword "\<template\>" skipwhite
 
 syn match ajninKeyword "\(if\s\+\)\@<=-n\>" nextgroup=ajninKeyword skipwhite
 syn match ajninKeyword "\(if\s\+\)\@<=-z\>" nextgroup=ajninKeyword skipwhite
@@ -51,6 +53,9 @@ syn match ajninRule "\(--\|>>\)\@<=[0-9a-zA-Z_-]\+\(--\|>>\|<<\|&\|$\)\@="
 syn match ajninRule ">>\(\s*[0-9a-zA-Z_-]\)\@!"
 syn match ajninRule "\([0-9a-zA-Z_-]\s*\)\@<!<<"
 
+syn match ajninTemplate "\(template\s\+\)\@<=[0-9a-zA-Z_-]\+"
+syn match ajninTemplate "<[0-9a-zA-Z_-]\+>"
+
 syn match ajninAssignment "&[^+=]\++\?="
 
 syn region ajninPath start="(" end=")" contains=ajninListRef,ajninGlob,ajninEnv
@@ -70,6 +75,7 @@ hi def link ajninList Function
 hi def link ajninListRef Identifier
 hi def link ajninEnv Identifier
 hi def link ajninRule Type
+hi def link ajninTemplate Function
 hi def link ajninAssignment Number
 hi def link ajninSingleString Float
 hi def link ajninDoubleString Float

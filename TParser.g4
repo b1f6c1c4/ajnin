@@ -80,7 +80,9 @@ options {
 // Actual grammar start.
 main: (nl | stmt | literal)* EOF;
 
-stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt | includeStmt | listStmt | pipeStmt | groupStmt | listGroupStmt;
+stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt
+    | includeStmt | listStmt | pipeStmt | groupStmt | listGroupStmt
+    | fileStmt | templateStmt;
 
 stmts: OpenCurly nl stmt+ CloseCurly;
 
@@ -112,7 +114,7 @@ groupStmt: (KForeach ID (Times ID)* | stage (Single Token assignment*)? Append K
 
 listGroupStmt: KForeach KList ID ListSearch OpenCurlyPath nl? stmt+ CloseCurly nl;
 
-pipeStmt: pipe nl;
+pipeStmt: pipe (NL1? templateInst)? nl;
 
 pipeGroup: Bra NL1? artifact+ Ket;
 
@@ -129,12 +131,20 @@ operation: (Mult | Single) (Token (assignment+ | (NL1 assignment)+ NL1)? Single)
 alsoGroup: KAlso Bra operation+ Ket
     | KAlso Bra (NL1 operation)+ NL1 Ket;
 
-assignment: Assign (Dollar ID | Dollar SubID | SingleString | DoubleString)?;
+assignment: Assign value?;
+
+value: Dollar ID | Dollar SubID | SingleString | DoubleString;
 
 literal: prolog | epilog;
 
 prolog: LiteralProlog LiteralNL;
 
 epilog: LiteralEpilog LiteralNL;
+
+fileStmt: KInclude KFile ListSearch Path;
+
+templateStmt: KTemplate TemplateName KList ID NL1 (operation alsoGroup*)+;
+
+templateInst: TemplateName value+;
 
 nl: NL1+;

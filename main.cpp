@@ -17,13 +17,8 @@
 
 #include <iostream>
 
-#include <antlr4-runtime.h>
-#include "TLexer.h"
-#include "TParser.h"
 #include "manager.hpp"
 
-using namespace parsing;
-using namespace antlr4;
 using namespace std::string_literals;
 
 int main(int argc, char *argv[]) {
@@ -65,26 +60,13 @@ along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
             in = argv[0];
     }
 
-    std::unique_ptr<CharStream> input;
+    parsing::manager mgr{ debug, quiet };
+
     if (in.empty()) {
-        input = std::make_unique<ANTLRInputStream>(std::cin);
+        mgr.load_stream(std::cin);
     } else {
-        auto tmp = std::make_unique<ANTLRFileStream>();
-        tmp->loadFromFile(in);
-        input = std::move(tmp);
+        mgr.load_file(in);
     }
-
-    TLexer lexer{ input.get() };
-    CommonTokenStream tokens{ &lexer };
-    tokens.fill();
-    TParser parser{ &tokens };
-
-    auto result = parser.main();
-    if (parser.getNumberOfSyntaxErrors())
-        return 1;
-
-    manager mgr{ debug, quiet };
-    result->accept(&mgr);
 
     if (out.empty()) {
         std::cout << mgr;

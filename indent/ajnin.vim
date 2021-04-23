@@ -33,7 +33,10 @@ function! AjninIndent(lnum)
   if l:prevl =~ '^\s*[+-]=' && l:thisl !~ '^\s*[+-]='
     let l:ind -= shiftwidth()
   endif
-  if l:prevl =~ '^\s*\(--\|>>\|also\).*)\s*$'
+  if l:prevl =~ '^\s*\(\]\s*\)\?\(--\|>>\).*)\s*$'
+    let l:ind -= shiftwidth()
+  endif
+  if l:prevl =~ '^\s*also.*\]\s*$'
     let l:ind -= shiftwidth()
   endif
   if l:prevl =~ '^\s*\(&\)'

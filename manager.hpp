@@ -18,6 +18,7 @@
 #pragma once
 
 #include <deque>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
@@ -76,10 +77,12 @@ namespace parsing {
             Ss ideps;
             pbuild_t app;
             bool app_also;
+            std::optional<std::filesystem::path> cwd;
 
             [[nodiscard]] list_item_t *operator[](const C &s) const;
             [[nodiscard]] rule_t operator[](const S &s) const;
             [[nodiscard]] pbuild_t make_build() const;
+            [[nodiscard]] std::filesystem::path get_cwd() const;
         };
 
         MC<list_t> _lists;
@@ -90,6 +93,7 @@ namespace parsing {
         pbuild_t _current_build{};
         rule_t *_current_rule{};
         S _current_artifact{};
+        S _current_value{};
 
         SS _prolog, _epilog;
 
@@ -148,9 +152,23 @@ namespace parsing {
 
         antlrcpp::Any visitAssignment(TParser::AssignmentContext *ctx) override;
 
+        antlrcpp::Any visitValue(TParser::ValueContext *ctx) override;
+
         antlrcpp::Any visitProlog(TParser::PrologContext *ctx) override;
 
         antlrcpp::Any visitEpilog(TParser::EpilogContext *ctx) override;
+
+        antlrcpp::Any visitFileStmt(TParser::FileStmtContext *ctx) override;
+
+        antlrcpp::Any visitTemplateStmt(TParser::TemplateStmtContext *ctx) override;
+
+        antlrcpp::Any visitTemplateInst(TParser::TemplateInstContext *ctx) override;
+
+        void parse(antlr4::CharStream &is);
+
+        void load_stream(std::istream &is);
+
+        void load_file(const std::string &str);
 
         friend std::ostream &operator<<(std::ostream &os, const manager &mgr);
     };

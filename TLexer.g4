@@ -57,6 +57,8 @@ KUnique: 'uniq';
 KDesc: 'desc';
 KPrint: 'print';
 KClear: 'clear';
+KFile: 'file';
+KTemplate: 'template';
 
 IsEmpty: '-z';
 IsNonEmpty: '-n';
@@ -78,6 +80,7 @@ Append: '<<';
 
 fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
 Token: LETTER ((LETTER | '0'..'9' | '_' | '-')* (LETTER | '0'..'9'))?;
+TemplateName: '<' LETTER ((LETTER | '0'..'9' | '_' | '-')* (LETTER | '0'..'9'))? '>';
 
 OpenCurly: '{';
 CloseCurly: '}';
