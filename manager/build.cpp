@@ -142,8 +142,12 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 antlrcpp::Any manager::visitAlsoGroup(TParser::AlsoGroupContext *ctx) {
     auto orig_artifact = _current_artifact;
     visitChildren(ctx);
-    if (_current_template && !ctx->Exclamation())
-        _current_template->arts.emplace(std::move(_current_artifact));
+    if (!ctx->Exclamation()) {
+        if (_current_template)
+            _current_template->arts.emplace(std::move(_current_artifact));
+        else
+            append_artifact();
+    }
     _current_artifact = std::move(orig_artifact);
     return {};
 }

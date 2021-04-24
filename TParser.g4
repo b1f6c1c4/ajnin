@@ -125,7 +125,7 @@ pipeGroup: Bra NL1? artifact+ Ket;
 
 artifact: (stage | pipe) Tilde? NL1?;
 
-pipe: (stage alsoGroup | pipeGroup) operAlsoOper;
+pipe: (stage (NL1? alsoGroup)* | pipeGroup) operAlsoOper;
 
 stage: Stage;
 
