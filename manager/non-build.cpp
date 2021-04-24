@@ -112,37 +112,11 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
     return {};
 }
 
-antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
+antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *ctx) {
     ctx_t next{ _current };
     _current = &next;
 
     auto ids = ctx->ID();
-
-    if (ctx->stage()) {
-        _current->app_also = ctx->KAlso();
-        _current->app = _current->make_build();
-
-        rule_t rule{};
-        _current_rule = &rule;
-        if (!ctx->Token()) {
-            _current->app->rule = "phony";
-        } else {
-            _current->app->rule = ctx->Token()->getText();
-            *_current_rule = (*_current)[_current->app->rule];
-            for (auto ass : ctx->assignment())
-                ass->accept(this);
-        }
-        _current_rule = nullptr;
-        for (auto &[k, v] : rule.vars)
-            _current->app->vars[k] = v;
-        for (auto &dep : rule.ideps)
-            _current->app->ideps.insert(dep);
-
-        ctx->stage()->accept(this);
-        _current->app->art = _current_artifact;
-
-        _current_artifact.clear();
-    }
 
     if (_debug) {
         std::cerr << std::string(_depth * 2, ' ') << "ajnin: Entering group of";
@@ -152,42 +126,38 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
     }
     _depth++;
 
-    if (ids.empty()) {
-        ctx->stmts()->accept(this);
-    } else {
-        std::stack<size_t> ii;
-        ii.push(0);
-        while (true) {
-            auto c = as_id(ids[ii.size() - 1]);
-            auto &li = _lists[c];
-            if (li.items.empty()) return {};
+    std::stack<size_t> ii;
+    ii.push(0);
+    while (true) {
+        auto c = as_id(ids[ii.size() - 1]);
+        auto &li = _lists[c];
+        if (li.items.empty()) return {};
 
-            next.ass[c] = &li.items[ii.top()];
-            if (ii.size() == ids.size()) {
-                if (_debug) {
-                    std::cerr << std::string(_depth * 2, ' ') << "ajnin:";
-                    for (auto id : ids)
-                        std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)]->name;
-                    std::cerr << '\n';
-                }
-                ctx->stmts()->accept(this);
-                _current->zrule = rule_t{};
-                _current->rules.clear();
-                _current->ideps.clear();
-                ii.top()++;
+        next.ass[c] = &li.items[ii.top()];
+        if (ii.size() == ids.size()) {
+            if (_debug) {
+                std::cerr << std::string(_depth * 2, ' ') << "ajnin:";
+                for (auto id : ids)
+                    std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)]->name;
+                std::cerr << '\n';
             }
-
-            if (ii.top() == li.items.size()) {
-                ii.pop();
-                if (ii.empty())
-                    break;
-                ii.top()++;
-                continue;
-            }
-
-            if (ii.size() < ids.size())
-                ii.push(0);
+            ctx->stmts()->accept(this);
+            _current->zrule = rule_t{};
+            _current->rules.clear();
+            _current->ideps.clear();
+            ii.top()++;
         }
+
+        if (ii.top() == li.items.size()) {
+            ii.pop();
+            if (ii.empty())
+                break;
+            ii.top()++;
+            continue;
+        }
+
+        if (ii.size() < ids.size())
+            ii.push(0);
     }
 
     _depth--;
@@ -199,6 +169,42 @@ antlrcpp::Any manager::visitGroupStmt(TParser::GroupStmtContext *ctx) {
     }
 
     _current = next.prev;
+    return {};
+}
+
+antlrcpp::Any manager::visitCollectGroupStmt(TParser::CollectGroupStmtContext *ctx) {
+    ctx_t next{ _current };
+    _current = &next;
+
+    _current->app_also = ctx->KAlso();
+    _current->app = _current->make_build();
+
+    visitChildren(ctx);
+
+    _current = next.prev;
+    return {};
+}
+
+antlrcpp::Any manager::visitCollectOperation(TParser::CollectOperationContext *ctx) {
+    rule_t rule{};
+    _current_rule = &rule;
+    if (!ctx->Token()) {
+        _current->app->rule = "phony";
+    } else {
+        _current->app->rule = ctx->Token()->getText();
+        *_current_rule = (*_current)[_current->app->rule];
+        for (auto ass : ctx->assignment())
+            ass->accept(this);
+    }
+    _current_rule = nullptr;
+    for (auto &[k, v] : rule.vars)
+        _current->app->vars[k] = v;
+    for (auto &dep : rule.ideps)
+        _current->app->ideps.insert(dep);
+
+    ctx->stage()->accept(this);
+    _current->app->art = std::move(_current_artifact);
+    _current_artifact = {};
     return {};
 }
 
@@ -384,7 +390,8 @@ antlrcpp::Any manager::visitTemplateStmt(TParser::TemplateStmtContext *ctx) {
     _current_build = _current->make_build();
 
     visitChildren(ctx);
-    tmp.arts.emplace(std::move(_current_artifact));
+    if (!ctx->Exclamation())
+        tmp.arts.emplace(std::move(_current_artifact));
 
     _current_build.reset();
     _current_artifact = "";

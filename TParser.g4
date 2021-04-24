@@ -82,7 +82,7 @@ main: (nl | stmt | literal)* EOF;
 
 stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt
     | includeStmt | listStmt | pipeStmt
-    | groupStmt | listGroupStmt
+    | foreachGroupStmt | collectGroupStmt | listGroupStmt
     | fileStmt | templateStmt;
 
 stmts: OpenCurly nl stmt+ CloseCurly;
@@ -111,17 +111,21 @@ listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
-groupStmt: (KForeach ID (Times ID)* | stage (Single Token assignment*)? Append KAlso?)? stmts nl;
+foreachGroupStmt: KForeach ID (Times ID)* stmts nl;
+
+collectGroupStmt: (Bra collectOperation Ket KAlso | collectOperation) (collectGroupStmt | stmts nl);
+
+collectOperation: stage (Single Token assignment*)? Append;
 
 listGroupStmt: KForeach KList ID ListSearch OpenCurlyPath nl? stmt+ CloseCurly nl;
 
-pipeStmt: (pipe | stage) (NL1? templateInst)? nl;
+pipeStmt: (pipe | stage) (Exclamation | NL1? templateInst)? nl;
 
 pipeGroup: Bra NL1? artifact+ Ket;
 
 artifact: (stage | pipe) Tilde? NL1?;
 
-pipe: (stage | pipeGroup) operAlsoOper;
+pipe: (stage alsoGroup | pipeGroup) operAlsoOper;
 
 stage: Stage;
 
@@ -129,7 +133,7 @@ operAlsoOper: NL1? operation (NL1? (alsoGroup NL1?)* operation)*;
 
 operation: (Mult | Single) (Token (assignment+ | (NL1 assignment)+ NL1)? Single)? stage;
 
-alsoGroup: KAlso Bra operAlsoOper Ket;
+alsoGroup: KAlso Bra operAlsoOper Exclamation? Ket;
 
 assignment: Assign value?;
 
@@ -143,8 +147,8 @@ epilog: LiteralEpilog LiteralNL;
 
 fileStmt: KInclude KFile ListSearch Path;
 
-templateStmt: KTemplate Token KList ID NL1 operAlsoOper (NL1? templateInst)? nl;
+templateStmt: KTemplate Token KList ID stage? NL1 operAlsoOper (Exclamation | NL1? templateInst)? nl;
 
-templateInst: TemplateName value+;
+templateInst: TemplateName value+ Exclamation?;
 
 nl: NL1+;

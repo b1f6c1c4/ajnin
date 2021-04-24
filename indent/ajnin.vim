@@ -44,7 +44,7 @@ function! AjninIndent(lnum)
   endif
   "     --rule-- (stage)
   " <text>
-  if l:prevl =~ '^\s*\(--\|>>\).*)\s*$'
+  if l:prevl =~ '^\s*\(--\|>>\).*)\s*\(!\s*\)\?$'
     let l:ind -= shiftwidth()
   endif
   "     <tmpl>

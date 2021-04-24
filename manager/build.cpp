@@ -33,24 +33,26 @@ void manager::art_to_dep() {
 void manager::append_artifact() {
     for (auto ptr = _current; ptr; ptr = ptr->prev)
         if (ptr->app) {
-            auto orig_artifact = _current_artifact;
+            auto orig_artifact = std::move(_current_artifact);
 
             auto b = std::make_shared<build_t>(*ptr->app);
-            b->deps.emplace_back(std::move(_current_artifact));
+            b->deps.emplace_back(orig_artifact);
 
             auto &pb = _builds[b->art];
             if (!pb) pb = std::make_shared<build_t>();
             *pb += std::move(*b);
 
             if (ptr->app_also)
-                _current_artifact = orig_artifact;
+                _current_artifact = std::move(orig_artifact);
+            else
+                _current_artifact = pb->art;
         }
 }
 
 antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
     _current_build = nullptr;
     visitChildren(ctx);
-    if (!ctx->templateInst())
+    if (!ctx->templateInst() && !ctx->Exclamation())
         append_artifact();
     _current_build = nullptr;
     return {};
@@ -126,6 +128,8 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 
     ctx->stage()->accept(this);
     _current_build->art = _current_artifact;
+    for (auto &[k, v] : _current_build->vars)
+        v = expand_art(v);
 
     auto &pb = _builds[_current_artifact];
     if (!pb) pb = std::make_shared<build_t>();
@@ -138,7 +142,7 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 antlrcpp::Any manager::visitAlsoGroup(TParser::AlsoGroupContext *ctx) {
     auto orig_artifact = _current_artifact;
     visitChildren(ctx);
-    if (_current_template)
+    if (_current_template && !ctx->Exclamation())
         _current_template->arts.emplace(std::move(_current_artifact));
     _current_artifact = std::move(orig_artifact);
     return {};
@@ -299,8 +303,11 @@ antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
     }
 
     if (!_current_template) {
-        apply_template(s0, args);
+        if (!ctx->Exclamation())
+            apply_template(s0, args);
     } else {
+        if (ctx->Exclamation())
+            throw std::runtime_error{ "Exclamation mark not allowed on template inst inside template decl." };
         _current_template->next = std::move(s0);
         _current_template->next_args = std::move(args);
     }

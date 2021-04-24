@@ -122,6 +122,7 @@ namespace parsing {
         [[nodiscard]] static C as_id(antlr4::tree::TerminalNode *s);
         [[nodiscard]] S expand_env(const S &s0) const;
         [[nodiscard]] static S expand_quote(S s, char c);
+        [[nodiscard]] S expand_art(const S &s0) const;
         [[nodiscard]] std::pair<S, bool> expand(const S &s0) const;
         void list_search(const S &s0);
         void art_to_dep();
@@ -141,7 +142,11 @@ namespace parsing {
 
         antlrcpp::Any visitRuleStmt(TParser::RuleStmtContext *ctx) override;
 
-        antlrcpp::Any visitGroupStmt(TParser::GroupStmtContext *ctx) override;
+        antlrcpp::Any visitForeachGroupStmt(TParser::ForeachGroupStmtContext *ctx) override;
+
+        antlrcpp::Any visitCollectGroupStmt(TParser::CollectGroupStmtContext *ctx) override;
+
+        antlrcpp::Any visitCollectOperation(TParser::CollectOperationContext *ctx) override;
 
         antlrcpp::Any visitListGroupStmt(TParser::ListGroupStmtContext *ctx) override;
 

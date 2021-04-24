@@ -117,8 +117,10 @@ S manager::expand_quote(S s, char c) {
     for (size_t i{}; i < s.size(); i++) {
         if (s[i] != '$') continue;
         if (i == s.size() - 1) continue;
-        if (s[i + 1] == c)
+        if (s[i + 1] == c) {
+            s.replace(i, 1, "");
             i++;
+        }
     }
     return s;
 }
@@ -163,6 +165,20 @@ S manager::expand_env(const S &s0) const {
     return s;
 }
 
+S manager::expand_art(const S &s0) const {
+    auto s = s0;
+    for (size_t i{}; i < s.size(); i++) {
+        if (s[i] != '$') continue;
+        if (i == s.size() - 1) throw std::runtime_error{ "Invalid string " + s0 };
+        if (s[i + 1] == '@') {
+            s.replace(i, 2, _current_artifact);
+            i += _current_artifact.size() - 1;
+            continue;
+        }
+    }
+    return s;
+}
+
 std::pair<S, bool> manager::expand(const S &s0) const {
     auto s = expand_env(s0);
     auto flag = false;
@@ -172,6 +188,10 @@ std::pair<S, bool> manager::expand(const S &s0) const {
         if (s[i + 1] == '$') {
             if (flag) throw std::runtime_error{ "Multiple globs in " + s0 };
             flag = true;
+            i++;
+            continue;
+        }
+        if (_current_rule && s[i + 1] == '@') {
             i++;
             continue;
         }

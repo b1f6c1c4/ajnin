@@ -73,6 +73,7 @@ ListEnumRItem: '-=' -> mode(listItem);
 RuleAppend: '|=';
 
 Times: '*';
+Exclamation: '!';
 
 Mult: '>>';
 Single: '--';

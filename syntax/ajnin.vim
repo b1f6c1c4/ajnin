@@ -45,6 +45,7 @@ syn match ajninGlob "\$\$"
 syn match ajninList "\(list\s\+\)\@<=[a-zA-Z]"
 syn match ajninList "[a-zA-Z]\(\s*[*{]\)\@="
 syn match ajninListRef "\$[a-zA-Z][0-9]\?"
+syn match ajninListRef "\$@"
 
 syn match ajninEnv "\${[^}]*}" contained
 
