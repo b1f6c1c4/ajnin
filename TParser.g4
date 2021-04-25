@@ -105,7 +105,7 @@ listModifyStmt: (KSort KDesc? KUnique? | KUnique) nl;
 
 listSearchStmt: ListSearch Path;
 
-listEnumStmt: ListEnum ListItemNL listEnumStmtItem+;
+listEnumStmt: ListEnum ListItemNL listEnumStmtItem+ nl?;
 
 listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 

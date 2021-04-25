@@ -87,6 +87,13 @@ namespace parsing {
             // Note: Only ass, zrule, rules, ideps are saved.
             [[nodiscard]] ctx_t save() const;
         };
+        struct ctx_guard {
+            explicit ctx_guard(ctx_t *&p) : value{ p }, ptr{ p } { ptr = &value; }
+            ~ctx_guard() { ptr = value.prev; }
+        private:
+            ctx_t value;
+            ctx_t *&ptr;
+        };
 
         struct template_t {
             S name;

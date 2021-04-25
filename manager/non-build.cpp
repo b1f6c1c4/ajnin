@@ -113,8 +113,7 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
 }
 
 antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *ctx) {
-    ctx_t next{ _current };
-    _current = &next;
+    ctx_guard next{ _current };
 
     auto ids = ctx->ID();
 
@@ -133,12 +132,12 @@ antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *c
         auto &li = _lists[c];
         if (li.items.empty()) return {};
 
-        next.ass[c] = &li.items[ii.top()];
+        _current->ass[c] = &li.items[ii.top()];
         if (ii.size() == ids.size()) {
             if (_debug) {
                 std::cerr << std::string(_depth * 2, ' ') << "ajnin:";
                 for (auto id : ids)
-                    std::cerr << " $" << as_id(id) << "=" << next.ass[as_id(id)]->name;
+                    std::cerr << " $" << as_id(id) << "=" << _current->ass[as_id(id)]->name;
                 std::cerr << '\n';
             }
             ctx->stmts()->accept(this);
@@ -168,20 +167,16 @@ antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *c
         std::cerr << '\n';
     }
 
-    _current = next.prev;
     return {};
 }
 
 antlrcpp::Any manager::visitCollectGroupStmt(TParser::CollectGroupStmtContext *ctx) {
-    ctx_t next{ _current };
-    _current = &next;
+    ctx_guard next{ _current };
 
     _current->app_also = ctx->KAlso();
     _current->app = _current->make_build();
 
     visitChildren(ctx);
-
-    _current = next.prev;
     return {};
 }
 
@@ -222,8 +217,7 @@ antlrcpp::Any manager::visitListGroupStmt(TParser::ListGroupStmtContext *ctx) {
 
     list_search(s0);
 
-    ctx_t next{ _current };
-    _current = &next;
+    ctx_guard next{ _current };
     _depth++;
     for (auto &item : _current_list->items) {
         _current->ass[c] = &item;
@@ -234,7 +228,6 @@ antlrcpp::Any manager::visitListGroupStmt(TParser::ListGroupStmtContext *ctx) {
         _current->ideps.clear();
     }
     _depth--;
-    _current = next.prev;
 
     _current_list = nullptr;
     _lists.erase(c);

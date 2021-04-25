@@ -27,10 +27,8 @@ using namespace std::string_literals;
 manager::manager(bool debug, bool quiet, size_t limit) : _debug{ debug }, _debug_limit{ limit }, _quiet{ quiet } { }
 
 antlrcpp::Any manager::visitMain(TParser::MainContext *ctx) {
-    ctx_t next{ _current };
-    _current = &next;
+    ctx_guard next{ _current };
     visitChildren(ctx);
-    _current = next.prev;
     return {};
 }
 
@@ -79,22 +77,18 @@ void manager::parse(antlr4::CharStream &is) {
 
 void manager::load_stream(std::istream &is) {
     antlr4::ANTLRInputStream s{ is };
-    ctx_t next{ _current };
-    _current = &next;
+    ctx_guard next{ _current };
     _current->cwd = std::filesystem::current_path();
     parse(s);
-    _current = next.prev;
 }
 
 void manager::load_file(const std::string &str) {
     antlr4::ANTLRFileStream s{};
     s.loadFromFile(str);
-    ctx_t next{ _current };
-    _current = &next;
+    ctx_guard next{ _current };
     _current->cwd = str;
     _current->cwd = _current->cwd->parent_path().lexically_normal();
     parse(s);
-    _current = next.prev;
 }
 
 std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
