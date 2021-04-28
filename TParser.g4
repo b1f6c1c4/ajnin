@@ -133,7 +133,7 @@ operAlsoOper: NL1? operation (NL1? (alsoGroup NL1?)* operation)*;
 
 operation: (Mult | Single) (Token (assignment+ | (NL1 assignment)+ NL1)? Single)? stage;
 
-alsoGroup: KAlso Bra operAlsoOper Exclamation? Ket;
+alsoGroup: KAlso Bra (operAlsoOper Exclamation? | operAlsoOper? NL1? templateInst)? Ket;
 
 assignment: Assign value?;
 

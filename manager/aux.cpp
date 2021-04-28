@@ -110,6 +110,9 @@ manager::template_t &manager::template_t::operator+=(manager::template_t &&o) {
         if (!pb) pb = std::make_shared<build_t>();
         *pb += std::move(*v);
     }
+
+    for (auto &n : o.nexts)
+        nexts.emplace_back(std::move(n));
     return *this;
 }
 

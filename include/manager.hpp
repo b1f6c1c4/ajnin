@@ -96,12 +96,17 @@ namespace parsing {
         };
 
         struct template_t {
+            struct next_t {
+                S art;
+                S name;
+                SS args;
+                bool cas;
+            };
             S name;
             C par;
             MS<pbuild_t> builds;
             Ss arts;
-            S next;
-            SS next_args;
+            std::deque<next_t> nexts;
 
             template_t &operator+=(template_t &&o);
         };
@@ -134,7 +139,7 @@ namespace parsing {
         void list_search(const S &s0);
         void art_to_dep();
         void append_artifact();
-        void apply_template(const S &s0, const SS &args);
+        void apply_template(const S &s0, const SS &args, SS *parts);
 
     public:
         explicit manager(bool debug = false, bool quiet = false, size_t limit = 15);

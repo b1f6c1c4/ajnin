@@ -142,7 +142,7 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
 antlrcpp::Any manager::visitAlsoGroup(TParser::AlsoGroupContext *ctx) {
     auto orig_artifact = _current_artifact;
     visitChildren(ctx);
-    if (!ctx->Exclamation()) {
+    if (!ctx->templateInst() && !ctx->Exclamation()) {
         if (_current_template)
             _current_template->arts.emplace(std::move(_current_artifact));
         else
@@ -225,7 +225,16 @@ antlrcpp::Any manager::visitValue(TParser::ValueContext *ctx) {
 // _current_artifact must be valid.
 // _current_build will be cleared.
 // _current_artifact will be cleared.
-void manager::apply_template(const S &s0, const SS &args) {
+// If parts == nullptr, append_artifact() will be called on each art.
+// If parts != nullptr, all arts will be added to *parts.
+void manager::apply_template(const S &s0, const SS &args, SS *parts) {
+    if (_debug) {
+        std::cerr << "Instantiation template " << s0 << " with arguments:\n";
+        for (auto &a : args)
+            std::cerr << "    " << a << "\n";
+        if (parts)
+            std::cerr << "  Notice: arts are saved elsewhere.\n";
+    }
     if (_current_template)
         throw std::runtime_error{ "Invalid state when apply_template." };
     if (!_templates.contains(s0))
@@ -241,7 +250,7 @@ void manager::apply_template(const S &s0, const SS &args) {
             auto [st, sz] = [&]() -> std::pair<S, size_t> {
                 if (i != s.size() - 2 && std::isdigit(s[i + 2])) {
                     auto v = s[i + 2] - '0';
-                    if (v > args.size())
+                    if (v + 1 >= args.size())
                         throw std::runtime_error{ "Parameter "s + tmpl.par + " out of range" };
                     return { args[v + 1], 3 };
                 }
@@ -272,16 +281,21 @@ void manager::apply_template(const S &s0, const SS &args) {
         *pb += std::move(pv);
     }
 
-    SS na;
-    for (auto &a : tmpl.next_args)
-        na.emplace_back(spatch(a));
+    for (auto &nxt : tmpl.nexts) {
+        _current_artifact = spatch(nxt.art);
+        SS na;
+        for (auto &a : nxt.args)
+            na.emplace_back(spatch(a));
+        SS blackhole;
+        apply_template(nxt.name, na, nxt.cas ? parts : &blackhole);
+    }
 
     for (auto &art : tmpl.arts) {
         _current_artifact = spatch(art);
-        if (!tmpl.next.empty())
-            apply_template(tmpl.next, na);
-        else
+        if (!parts)
             append_artifact();
+        else
+            parts->emplace_back(art);
     }
 
     _current_artifact = {};
@@ -293,7 +307,7 @@ void manager::apply_template(const S &s0, const SS &args) {
 //    _current_build will be cleared.
 //    _current_artifact will be cleared.
 // Otherwise:
-//    _current_artifact will not change.
+//    _current_artifact must be valid.
 //    _current_build will not change.
 antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
     auto s0 = ctx->TemplateName()->getText();
@@ -308,12 +322,9 @@ antlrcpp::Any manager::visitTemplateInst(TParser::TemplateInstContext *ctx) {
 
     if (!_current_template) {
         if (!ctx->Exclamation())
-            apply_template(s0, args);
+            apply_template(s0, args, nullptr);
     } else {
-        if (ctx->Exclamation())
-            throw std::runtime_error{ "Exclamation mark not allowed on template inst inside template decl." };
-        _current_template->next = std::move(s0);
-        _current_template->next_args = std::move(args);
+        _current_template->nexts.emplace_back(template_t::next_t{ _current_artifact, s0, std::move(args), !ctx->Exclamation() });
     }
 
     return {};
