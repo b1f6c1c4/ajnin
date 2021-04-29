@@ -63,8 +63,10 @@ namespace parsing {
         SS deps;
         Ss ideps;
         MS<S> vars;
+        bool dirty{};
 
         build_t &operator+=(build_t &&o);
+        bool dedup();
     };
     using pbuild_t = std::shared_ptr<build_t>;
 
@@ -109,6 +111,7 @@ namespace parsing {
             std::deque<next_t> nexts;
 
             template_t &operator+=(template_t &&o);
+            bool dedup();
         };
 
         MC<list_t> _lists;
@@ -215,10 +218,10 @@ namespace parsing {
 
         void load_file(const std::string &str);
 
-        friend std::ostream &operator<<(std::ostream &os, const manager &mgr);
+        friend std::ostream &operator<<(std::ostream &os, manager &mgr);
 
         static bool collect_deps(const S &fn, bool debug);
     };
 
-    std::ostream &operator<<(std::ostream &os, const manager &mgr);
+    std::ostream &operator<<(std::ostream &os, manager &mgr);
 }

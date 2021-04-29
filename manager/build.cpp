@@ -26,8 +26,9 @@ using namespace parsing;
 using namespace std::string_literals;
 
 void manager::art_to_dep() {
-    if (!_is_pipeGroup)
-        _current_build->deps.emplace_back(std::move(_current_artifact));
+    if (_is_pipeGroup) return;
+    _current_build->deps.emplace_back(std::move(_current_artifact));
+    _current_build->dirty = true;
 }
 
 void manager::append_artifact() {
@@ -37,6 +38,7 @@ void manager::append_artifact() {
 
             auto b = std::make_shared<build_t>(*ptr->app);
             b->deps.emplace_back(orig_artifact);
+            b->dirty = true;
 
             auto &pb = _builds[b->art];
             if (!pb) pb = std::make_shared<build_t>();
@@ -77,7 +79,7 @@ antlrcpp::Any manager::visitPipeGroup(TParser::PipeGroupContext *ctx) {
 antlrcpp::Any manager::visitArtifact(TParser::ArtifactContext *ctx) {
     visitChildren(ctx);
     if (!ctx->Tilde())
-        _current_build->deps.emplace_back(_current_artifact);
+        _current_build->deps.emplace_back(_current_artifact), _current_build->dirty = true;
     else
         _current_build->ideps.insert(_current_artifact);
     return {};
@@ -246,6 +248,7 @@ void manager::apply_template(const S &s0, const SS &args, SS *parts) {
         throw std::runtime_error{ "Template " + s0 + " not found." };
 
     auto &tmpl = _templates.at(s0);
+    tmpl.dedup();
 
     auto spatch = [&](std::string s) {
         for (size_t i{}; i < s.size(); i++) {

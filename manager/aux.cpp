@@ -87,11 +87,25 @@ build_t &build_t::operator+=(build_t &&o) {
     if (!std::equal(vars.begin(), vars.end(), o.vars.begin()))
         throw std::runtime_error{ "Conflict var for " + art };
 
+    if (!o.deps.empty())
+        dirty = true;
     for (auto &dep : o.deps)
-        if (std::find(deps.begin(), deps.end(), dep) == deps.end())
-            deps.emplace_back(std::move(dep));
+        deps.emplace_back(std::move(dep));
     o.deps.clear();
     return *this;
+}
+
+bool build_t::dedup() {
+    if (!dirty) return false;
+    SS next;
+    Ss seen;
+    for (auto &dep : deps)
+        if (seen.insert(dep).second)
+            next.emplace_back(std::move(dep));
+    auto found = deps.size() != next.size();
+    deps = std::move(next);
+    dirty = false;
+    return found;
 }
 
 manager::template_t &manager::template_t::operator+=(manager::template_t &&o) {
@@ -114,6 +128,13 @@ manager::template_t &manager::template_t::operator+=(manager::template_t &&o) {
     for (auto &n : o.nexts)
         nexts.emplace_back(std::move(n));
     return *this;
+}
+
+bool manager::template_t::dedup() {
+    auto found = false;
+    for (auto &[k, v] : builds)
+        found |= v->dedup();
+    return found;
 }
 
 S manager::expand_dollar(S s) {
