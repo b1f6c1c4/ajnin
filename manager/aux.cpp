@@ -95,7 +95,7 @@ build_t &build_t::operator+=(build_t &&o) {
 }
 
 manager::template_t &manager::template_t::operator+=(manager::template_t &&o) {
-    if (builds.empty())
+    if (name.empty())
         return *this = std::move(o);
 
     if (name != o.name)
@@ -114,6 +114,13 @@ manager::template_t &manager::template_t::operator+=(manager::template_t &&o) {
     for (auto &n : o.nexts)
         nexts.emplace_back(std::move(n));
     return *this;
+}
+
+S manager::expand_dollar(S s) {
+    for (auto &c : s)
+        if (c == '\e')
+            c = '$';
+    return s;
 }
 
 S manager::expand_quote(S s, char c) {

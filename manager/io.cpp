@@ -84,36 +84,40 @@ void manager::load_stream(std::istream &is) {
 
 void manager::load_file(const std::string &str) {
     antlr4::ANTLRFileStream s{};
+    if (_debug)
+        std::cerr << std::string(_depth * 2, ' ') << "ajnin: Loading file " << str << "\n";
+    _depth++;
     s.loadFromFile(str);
     ctx_guard next{ _current };
     _current->cwd = str;
     _current->cwd = _current->cwd->parent_path().lexically_normal();
     parse(s);
+    _depth--;
 }
 
 std::ostream &parsing::operator<<(std::ostream &os, const manager &mgr) {
     for (auto &t : mgr._prolog)
-        os << t << '\n';
+        os << manager::expand_dollar(t) << '\n';
 
     for (auto &[art, pb] : mgr._builds) {
-        os << "build " << art << ": " << pb->rule;
+        os << "build " << manager::expand_dollar(art) << ": " << manager::expand_dollar(pb->rule);
         for (auto &dep : pb->deps)
-            os << " " << dep;
+            os << " " << manager::expand_dollar(dep);
         if (!pb->ideps.empty()) {
             os << " |";
             for (auto &dep : pb->ideps)
-                os << " " << dep;
+                os << " " << manager::expand_dollar(dep);
         }
         if (!pb->vars.empty()) {
             os << '\n';
             for (auto &[va, vl] : pb->vars)
-                os << "    " << va << " = " << vl << '\n';
+                os << "    " << manager::expand_dollar(va) << " = " << manager::expand_dollar(vl) << '\n';
         }
         os << '\n';
     }
 
     for (auto &t : mgr._epilog)
-        os << t << '\n';
+        os << manager::expand_dollar(t) << '\n';
 
     return os;
 }

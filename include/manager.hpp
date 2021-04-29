@@ -122,6 +122,7 @@ namespace parsing {
         S _current_artifact{};
         S _current_value{};
         template_t *_current_template{};
+        bool _is_pipeGroup{};
 
         SS _prolog, _epilog;
 
@@ -132,6 +133,7 @@ namespace parsing {
         size_t _depth{};
 
         [[nodiscard]] static C as_id(antlr4::tree::TerminalNode *s);
+        [[nodiscard]] static S expand_dollar(S s);
         [[nodiscard]] S expand_env(const S &s0) const;
         [[nodiscard]] static S expand_quote(S s, char c);
         [[nodiscard]] S expand_art(const S &s0) const;

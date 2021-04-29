@@ -121,7 +121,7 @@ listGroupStmt: KForeach KList ID ListSearch OpenCurlyPath nl? stmt+ CloseCurly n
 
 pipeStmt: (pipe | stage) (Exclamation | NL1? templateInst)? nl;
 
-pipeGroup: Bra NL1? artifact+ Ket;
+pipeGroup: Bra NL1? artifact* Ket;
 
 artifact: (stage | pipe) Tilde? NL1?;
 
@@ -147,7 +147,7 @@ epilog: LiteralEpilog LiteralNL;
 
 fileStmt: KInclude KFile ListSearch Path;
 
-templateStmt: KTemplate Token KList ID stage? NL1 operAlsoOper (Exclamation | NL1? templateInst)? nl;
+templateStmt: KTemplate Token KList ID (stage? NL1 operAlsoOper? | pipeGroup NL1? operAlsoOper) (Exclamation | NL1? templateInst)? nl;
 
 templateInst: TemplateName value+ Exclamation?;
 

@@ -26,7 +26,7 @@ using namespace parsing;
 using namespace std::string_literals;
 
 void manager::art_to_dep() {
-    if (_current_build->deps.empty() && _current_build->ideps.empty())
+    if (!_is_pipeGroup)
         _current_build->deps.emplace_back(std::move(_current_artifact));
 }
 
@@ -55,16 +55,19 @@ antlrcpp::Any manager::visitPipeStmt(TParser::PipeStmtContext *ctx) {
     if (!ctx->templateInst() && !ctx->Exclamation())
         append_artifact();
     _current_build = nullptr;
+    _current_artifact.clear();
     return {};
 }
 
 // _current_build must be valid.
 // _current_build.i?dep will be appended.
 // _current_artifact will be cleared.
+// _is_pipeGroup will be set.
 antlrcpp::Any manager::visitPipeGroup(TParser::PipeGroupContext *ctx) {
     _current_artifact.clear();
     visitChildren(ctx);
     _current_artifact.clear();
+    _is_pipeGroup = true;
     return {};
 }
 
@@ -91,6 +94,7 @@ antlrcpp::Any manager::visitPipe(TParser::PipeContext *ctx) {
 }
 
 // _current_artifact will be set.
+// _is_pipeGroup will be unset.
 antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
     auto s0 = ctx->Stage()->getText();
     if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up with ()" };
@@ -101,6 +105,7 @@ antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
     if (_current_rule)
         _current_rule->ideps.insert(s);
     _current_artifact = std::move(s);
+    _is_pipeGroup = false;
     return {};
 }
 
@@ -229,11 +234,11 @@ antlrcpp::Any manager::visitValue(TParser::ValueContext *ctx) {
 // If parts != nullptr, all arts will be added to *parts.
 void manager::apply_template(const S &s0, const SS &args, SS *parts) {
     if (_debug) {
-        std::cerr << "Instantiation template " << s0 << " with arguments:\n";
+        std::cerr << std::string(_depth * 2, ' ') << "ajnin: Instantiation template " << s0 << " with arguments:\n";
         for (auto &a : args)
-            std::cerr << "    " << a << "\n";
+            std::cerr << std::string(_depth * 2, ' ') << "    " << a << "\n";
         if (parts)
-            std::cerr << "  Notice: arts are saved elsewhere.\n";
+            std::cerr << std::string(_depth * 2, ' ') << "  Notice: arts are saved elsewhere.\n";
     }
     if (_current_template)
         throw std::runtime_error{ "Invalid state when apply_template." };

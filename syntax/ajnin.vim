@@ -43,6 +43,9 @@ syn match ajninOperator "[\[\]]"
 
 syn match ajninGlob "\$\$"
 
+" Ctrl-D
+syn match ajninDollar "\%U1b" contained
+
 syn match ajninList "\(list\s\+\)\@<=[a-zA-Z]"
 syn match ajninList "[a-zA-Z]\(\s*[*{]\)\@="
 syn match ajninListRef "\$[a-zA-Z][0-9]\?"
@@ -60,11 +63,11 @@ syn match ajninTemplate "<[0-9a-zA-Z._-]\+>"
 
 syn match ajninAssignment "&[^+=]\++\?="
 
-syn region ajninPath start="(" end=")" contains=ajninListRef,ajninGlob,ajninEnv
-syn region ajninPath start="\(:=\)\@<=" end=" \({$\)\@=\|$" contains=ajninListRef,ajninGlob,ajninEnv
+syn region ajninPath start="(" end=")" contains=ajninListRef,ajninGlob,ajninEnv,ajninDollar
+syn region ajninPath start="\(:=\)\@<=" end=" \({$\)\@=\|$" contains=ajninListRef,ajninGlob,ajninEnv,ajninDollar
 
-syn region ajninSingleString start="'" skip="\$'" end="'" contains=ajninEnv
-syn region ajninDoubleString start="\"" skip="\$\"" end="\"" contains=ajninListRef,ajninEnv
+syn region ajninSingleString start="'" skip="\$'" end="'" contains=ajninEnv,ajninDollar
+syn region ajninDoubleString start="\"" skip="\$\"" end="\"" contains=ajninListRef,ajninEnv,ajninDollar
 
 syn keyword ajninTodo TODO FIXME contained
 
@@ -73,6 +76,7 @@ hi def link ajninLiteral Debug
 hi def link ajninKeyword Keyword
 hi def link ajninOperator Keyword
 hi def link ajninGlob Identifier
+hi def link ajninDollar Identifier
 hi def link ajninList Function
 hi def link ajninListRef Identifier
 hi def link ajninEnv Identifier
