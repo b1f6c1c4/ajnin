@@ -395,3 +395,20 @@ antlrcpp::Any manager::visitTemplateStmt(TParser::TemplateStmtContext *ctx) {
     _builds = std::move(prev_builds);
     return {};
 }
+
+antlrcpp::Any manager::visitExecuteStmt(TParser::ExecuteStmtContext *ctx) {
+    auto s0 = ctx->Path()->getText();
+    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+    s0.pop_back();
+
+    auto [st, glob] = expand(s0);
+    if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
+    if (_debug)
+        std::cerr << std::string(_depth * 2, ' ') << "ajnin: Executing external command " << st << '\n';
+
+    auto ret = system(st.c_str());
+    if (ret != 0)
+        throw std::runtime_error{ "External command " + st + " failed with " + std::to_string(ret) };
+
+    return {};
+}

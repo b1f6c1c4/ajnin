@@ -202,6 +202,8 @@ namespace parsing {
 
         antlrcpp::Any visitTemplateInst(TParser::TemplateInstContext *ctx) override;
 
+        antlrcpp::Any visitExecuteStmt(TParser::ExecuteStmtContext *ctx) override;
+
         void parse(antlr4::CharStream &is);
 
         void load_stream(std::istream &is);

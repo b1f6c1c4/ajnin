@@ -83,7 +83,7 @@ main: (nl | stmt | literal)* EOF;
 stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt
     | includeStmt | listStmt | pipeStmt
     | foreachGroupStmt | collectGroupStmt | listGroupStmt
-    | fileStmt | templateStmt;
+    | fileStmt | templateStmt | executeStmt;
 
 stmts: OpenCurly nl stmt+ CloseCurly;
 
@@ -150,5 +150,7 @@ fileStmt: KInclude KFile ListSearch Path;
 templateStmt: KTemplate Token KList ID stage? NL1 operAlsoOper (Exclamation | NL1? templateInst)? nl;
 
 templateInst: TemplateName value+ Exclamation?;
+
+executeStmt: KExecute ListSearch Path nl?;
 
 nl: NL1+;

@@ -59,6 +59,7 @@ KPrint: 'print';
 KClear: 'clear';
 KFile: 'file';
 KTemplate: 'template';
+KExecute: 'execute';
 
 IsEmpty: '-z';
 IsNonEmpty: '-n';
