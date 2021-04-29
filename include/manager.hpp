@@ -125,6 +125,7 @@ namespace parsing {
         bool _is_pipeGroup{};
 
         SS _prolog, _epilog;
+        Ss _ajnin_deps;
 
         mutable std::set<S> _env_notif;
 
@@ -206,6 +207,8 @@ namespace parsing {
 
         antlrcpp::Any visitExecuteStmt(TParser::ExecuteStmtContext *ctx) override;
 
+        antlrcpp::Any visitMetaStmt(TParser::MetaStmtContext *ctx) override;
+
         void parse(antlr4::CharStream &is);
 
         void load_stream(std::istream &is);
@@ -213,6 +216,8 @@ namespace parsing {
         void load_file(const std::string &str);
 
         friend std::ostream &operator<<(std::ostream &os, const manager &mgr);
+
+        static bool collect_deps(const S &fn, bool debug);
     };
 
     std::ostream &operator<<(std::ostream &os, const manager &mgr);

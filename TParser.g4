@@ -83,7 +83,7 @@ main: (nl | stmt | literal)* EOF;
 stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt
     | includeStmt | listStmt | pipeStmt
     | foreachGroupStmt | collectGroupStmt | listGroupStmt
-    | fileStmt | templateStmt | executeStmt;
+    | fileStmt | templateStmt | executeStmt | metaStmt;
 
 stmts: OpenCurly nl stmt+ CloseCurly;
 
@@ -152,5 +152,7 @@ templateStmt: KTemplate Token KList ID (stage? NL1 operAlsoOper? | pipeGroup NL1
 templateInst: TemplateName value+ Exclamation?;
 
 executeStmt: KExecute ListSearch Path nl?;
+
+metaStmt: KMeta RuleAppend stage+ nl?;
 
 nl: NL1+;

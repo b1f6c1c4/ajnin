@@ -60,6 +60,10 @@ along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
             in = argv[0];
     }
 
+    if (!out.empty())
+        if (parsing::manager::collect_deps(out, debug))
+            return 0;
+
     parsing::manager mgr{ debug, quiet };
 
     if (in.empty()) {

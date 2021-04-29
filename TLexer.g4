@@ -60,6 +60,7 @@ KClear: 'clear';
 KFile: 'file';
 KTemplate: 'template';
 KExecute: 'execute';
+KMeta: 'meta';
 
 IsEmpty: '-z';
 IsNonEmpty: '-n';
