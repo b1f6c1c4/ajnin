@@ -61,6 +61,7 @@ KFile: 'file';
 KTemplate: 'template';
 KExecute: 'execute';
 KMeta: 'meta';
+KPool: 'pool';
 
 IsEmpty: '-z';
 IsNonEmpty: '-n';

@@ -17,6 +17,7 @@
 
 #include "manager.hpp"
 
+#include <boost/regex.hpp>
 #include <cstring>
 #include <iostream>
 #include <stack>
@@ -409,6 +410,28 @@ antlrcpp::Any manager::visitExecuteStmt(TParser::ExecuteStmtContext *ctx) {
     auto ret = system(st.c_str());
     if (ret != 0)
         throw std::runtime_error{ "External command " + st + " failed with " + std::to_string(ret) };
+
+    return {};
+}
+
+antlrcpp::Any manager::visitPoolStmt(TParser::PoolStmtContext *ctx) {
+    auto pool = ctx->Token()->getText();
+
+    for (auto st : ctx->stage()) {
+        st->accept(this);
+        _pools[_current_artifact] = pool;
+    }
+
+    if (ctx->Path()) {
+        auto s0 = ctx->Path()->getText();
+        if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+        s0.pop_back();
+
+        boost::regex re{ s0 };
+        for (auto &[art, pb] : _builds)
+            if (boost::regex_match(art, re))
+                _pools[art] = pool;
+    }
 
     return {};
 }

@@ -132,10 +132,12 @@ std::ostream &parsing::operator<<(std::ostream &os, manager &mgr) {
             for (auto &dep : pb->ideps)
                 os << " " << manager::expand_dollar(dep);
         }
-        if (!pb->vars.empty()) {
+        if (!pb->vars.empty() || mgr._pools.contains(art)) {
             os << '\n';
             for (auto &[va, vl] : pb->vars)
                 os << "    " << manager::expand_dollar(va) << " = " << manager::expand_dollar(vl) << '\n';
+            if (mgr._pools.contains(art))
+                os << "    pool = " << mgr._pools.at(art) << "\n";
         }
         os << '\n';
     }

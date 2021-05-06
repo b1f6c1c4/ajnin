@@ -36,6 +36,8 @@ set(ANTLR_EXECUTABLE /usr/share/java/antlr-4.9.2-complete.jar)
 # add macros to generate ANTLR Cpp code from grammar
 find_package(ANTLR REQUIRED)
 
+find_package(Boost 1.75.0 REQUIRED)
+
 # Call macro to add lexer and grammar to your build dependencies.
 antlr_target(TLexer TLexer.g4 LEXER
         PACKAGE parsing)
@@ -59,3 +61,4 @@ add_executable(ajnin main.cpp
         ${ANTLR_TLexer_CXX_OUTPUTS}
         ${ANTLR_TParser_CXX_OUTPUTS})
 target_link_libraries(ajnin antlr4_static)
+target_link_libraries(ajnin boost_regex)

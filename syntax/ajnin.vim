@@ -30,6 +30,7 @@ syn match ajninKeyword "\<file\>" skipwhite
 syn match ajninKeyword "\<template\>" skipwhite
 syn match ajninKeyword "\<execute\>" skipwhite
 syn match ajninKeyword "\<meta\>" skipwhite
+syn match ajninKeyword "\<pool\>" skipwhite
 
 syn match ajninKeyword "\(if\s\+\)\@<=-n\>" nextgroup=ajninKeyword skipwhite
 syn match ajninKeyword "\(if\s\+\)\@<=-z\>" nextgroup=ajninKeyword skipwhite

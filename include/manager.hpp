@@ -117,6 +117,7 @@ namespace parsing {
         MC<list_t> _lists;
         MS<pbuild_t> _builds;
         MS<template_t> _templates;
+        MS<S> _pools;
 
         ctx_t *_current{};
         list_t *_current_list{};
@@ -211,6 +212,8 @@ namespace parsing {
         antlrcpp::Any visitExecuteStmt(TParser::ExecuteStmtContext *ctx) override;
 
         antlrcpp::Any visitMetaStmt(TParser::MetaStmtContext *ctx) override;
+
+        antlrcpp::Any visitPoolStmt(TParser::PoolStmtContext *ctx) override;
 
         void parse(antlr4::CharStream &is);
 
