@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
-ajnin build.ajnin -o build.ninja
-
-ninja "$@"
+if [ -f build.ajnin ]; then
+    ajnin build.ajnin -o build.ninja
+    ninja "$@"
+else
+    echo '!!!!!!!!! ??WHAT THE FUCK ARE YOU DOING??  !!!!!!!!!' >&2
+    exit 114
+fi
