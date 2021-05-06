@@ -151,8 +151,6 @@ namespace parsing {
     public:
         explicit manager(bool debug = false, bool quiet = false, size_t limit = 15);
 
-        antlrcpp::Any visitMain(TParser::MainContext *ctx) override;
-
         antlrcpp::Any visitDebugStmt(TParser::DebugStmtContext *ctx) override;
 
         antlrcpp::Any visitClearStmt(TParser::ClearStmtContext *ctx) override;
@@ -219,7 +217,7 @@ namespace parsing {
 
         void load_stream(std::istream &is);
 
-        void load_file(const std::string &str);
+        void load_file(const std::string &str, bool flat = false);
 
         friend std::ostream &operator<<(std::ostream &os, manager &mgr);
 

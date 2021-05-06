@@ -26,12 +26,6 @@ using namespace std::string_literals;
 
 manager::manager(bool debug, bool quiet, size_t limit) : _debug{ debug }, _debug_limit{ limit }, _quiet{ quiet } { }
 
-antlrcpp::Any manager::visitMain(TParser::MainContext *ctx) {
-    ctx_guard next{ _current };
-    visitChildren(ctx);
-    return {};
-}
-
 antlrcpp::Any manager::visitProlog(TParser::PrologContext *ctx) {
     auto s0 = ctx->LiteralNL()->getText();
     if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
@@ -58,7 +52,7 @@ antlrcpp::Any manager::visitFileStmt(TParser::FileStmtContext *ctx) {
     auto [s, flag] = expand(s0);
     if (flag) throw std::runtime_error{ "Glob not allowed in " + s0 };
 
-    load_file(s);
+    load_file(s, true);
 
     return {};
 }
@@ -82,17 +76,25 @@ void manager::load_stream(std::istream &is) {
     parse(s);
 }
 
-void manager::load_file(const std::string &str) {
+void manager::load_file(const std::string &str, bool flat) {
     antlr4::ANTLRFileStream s{};
     if (_debug)
         std::cerr << std::string(_depth * 2, ' ') << "ajnin: Loading file " << str << "\n";
     _ajnin_deps.insert(str);
     _depth++;
     s.loadFromFile(str);
-    ctx_guard next{ _current };
-    _current->cwd = str;
-    _current->cwd = _current->cwd->parent_path().lexically_normal();
-    parse(s);
+    if (flat) {
+        auto old_cwd = std::move(_current->cwd);
+        _current->cwd = str;
+        _current->cwd = _current->cwd->parent_path().lexically_normal();
+        parse(s);
+        _current->cwd = std::move(old_cwd);
+    } else {
+        ctx_guard next{ _current };
+        _current->cwd = str;
+        _current->cwd = _current->cwd->parent_path().lexically_normal();
+        parse(s);
+    }
     _depth--;
 }
 
