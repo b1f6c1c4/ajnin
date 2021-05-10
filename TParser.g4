@@ -125,15 +125,15 @@ pipeGroup: Bra NL1? artifact* Ket;
 
 artifact: (stage | pipe) Tilde? NL1?;
 
-pipe: (stage (NL1? alsoGroup)* | pipeGroup) operAlsoOper;
+pipe: (stage (NL1? alsoGroup)* | pipeGroup) operAlso;
 
 stage: Stage;
 
-operAlsoOper: NL1? operation (NL1? (alsoGroup NL1?)* operation)*;
+operAlso: (NL1? operation NL1? (alsoGroup NL1?)*)+;
 
 operation: (Mult | Single) (Token (assignment+ | (NL1 assignment)+ NL1)? Single)? stage;
 
-alsoGroup: KAlso Bra (operAlsoOper Exclamation? | operAlsoOper? NL1? templateInst)? Ket;
+alsoGroup: KAlso Bra (operAlso Exclamation? | operAlso? NL1? templateInst)? Ket;
 
 assignment: Assign value?;
 
@@ -147,7 +147,7 @@ epilog: LiteralEpilog LiteralNL;
 
 fileStmt: KInclude KFile ListSearch Path;
 
-templateStmt: KTemplate Token KList ID (stage? NL1 operAlsoOper? | pipeGroup NL1? operAlsoOper) (Exclamation | NL1? templateInst)? nl;
+templateStmt: KTemplate Token KList ID (stage? NL1 operAlso? | pipeGroup NL1? operAlso) (Exclamation | NL1? templateInst)? nl;
 
 templateInst: TemplateName value+ Exclamation?;
 

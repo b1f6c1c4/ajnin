@@ -291,12 +291,13 @@ antlrcpp::Any manager::visitIncludeStmt(TParser::IncludeStmtContext *ctx) {
     _current_list = &_lists[c];
     if (_debug) {
         std::cerr << std::string(_depth * 2, ' ') << "ajnin: Reading list " << c
-                << "from " << s0 << '\n';
+                << " from " << s0 << '\n';
     }
     _depth++;
 
     auto [s, flag] = expand(s0);
     if (flag) throw std::runtime_error{ "Glob not allowed in " + s0 };
+    _ajnin_deps.insert(s);
 
     {
         std::ifstream fin{ s };
@@ -306,6 +307,8 @@ antlrcpp::Any manager::visitIncludeStmt(TParser::IncludeStmtContext *ctx) {
             S line;
             std::getline(fin, line);
             if (!fin.good()) break;
+            if (line.starts_with("#"))
+                continue;
             line = expand_env(line);
             if (!line.ends_with(" \\")) {
                 if (empty) {
