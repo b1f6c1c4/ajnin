@@ -22,7 +22,7 @@
 using namespace std::string_literals;
 
 int main(int argc, char *argv[]) {
-    auto debug = false, quiet = false;
+    auto debug = false, quiet = false, bare = false;
     std::string in, out;
 
     argc--, argv++;
@@ -48,7 +48,9 @@ along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
 )";
             return 0;
         }
-        if (*argv == "-d"s || *argv == "--debug"s)
+        if (*argv == "--bare"s)
+            bare = true;
+        else if (*argv == "-d"s || *argv == "--debug"s)
             debug = true;
         else if (*argv == "-q"s || *argv == "--quiet"s)
             quiet = true;
@@ -73,9 +75,9 @@ along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
     }
 
     if (out.empty()) {
-        std::cout << mgr;
+        mgr.dump(std::cout, bare);
     } else {
         std::ofstream ofs{ out };
-        ofs << mgr;
+        mgr.dump(ofs, bare);
     }
 }

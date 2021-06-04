@@ -22,6 +22,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+include(CTest)
+enable_testing()
+add_subdirectory(tests)
+
 # required if linking to static library
 add_definitions(-DANTLR4CPP_STATIC)
 

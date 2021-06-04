@@ -219,10 +219,8 @@ namespace parsing {
 
         void load_file(const std::string &str, bool flat = false);
 
-        friend std::ostream &operator<<(std::ostream &os, manager &mgr);
+        void dump(std::ostream &os, bool bare = false);
 
         static bool collect_deps(const S &fn, bool debug);
     };
-
-    std::ostream &operator<<(std::ostream &os, manager &mgr);
 }
