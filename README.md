@@ -1,10 +1,12 @@
-# ajnin [ˈajn in]: A Beautiful Ninja generator
+# [ˈajn in]: A Beautiful [Ninja](https://github.com/ninja-build/ninja) generator
+
+[[ˈnɪ̈̃nʷd͡ʒʷ ə]](https://github.com/ninja-build/ninja) focuses on **speed**,
+[['ajn in]](https://github.com/b1f6c1c4/ajnin) focuses on **beauty**.
 
 ![Demo](demo.gif)
 
-Our top priority is beauty. Look at the DSL:
 
-`build.ajnin`:
+Code `build.ajnin` **beautifully**:
 
 ```
 rule cc |= (/usr/bin/cc)
@@ -20,7 +22,7 @@ rule cc &cflags+=' -O3'
 }
 ```
 
-Run: `ajnin -o build.ninja build.ajnin`:
+Run: `ajnin -o build.ninja build.ajnin` to bridge **beauty** and **speed**:
 
 ```ninja
 build all: phony build/a.out
@@ -30,6 +32,8 @@ build build/a.o: cc src/a.c | /usr/bin/cc
 build build/b.o: cc src/b.c | /usr/bin/cc
     cflags =  -O3
 ```
+
+And then run `ninja` **speedy**.
 
 ## Install
 
