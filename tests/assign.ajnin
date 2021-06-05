@@ -1,0 +1,42 @@
+> # Copyright (C) 2021 b1f6c1c4
+> #
+> # This file is part of ajnin.
+> #
+> # ajnin is free software: you can redistribute it and/or modify it under the
+> # terms of the GNU Affero General Public License as published by the Free
+> # Software Foundation, version 3.
+> #
+> # ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+> # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+> # FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+> # more details.
+> #
+> # You should have received a copy of the GNU Affero General Public License
+> # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
+> 
+
+pool poo |= (a2) (b15)
+
+(a0) --ru-- (b0)
+
+rule |= (r3)
+rule &a="k"
+rule ru |= (r1)
+rule ru &a="rua"
+
+(z) --ru<< {
+    rule ru |= (r2)
+    rule ru &a+="rua"
+    rule &a+="k" &b="x"
+
+    (a1) --ru-- (b1)
+    pool po := .*
+    (a12) --ru&a=-- (b12)
+    (a15) --ru&a="xx"-- (b15)
+}
+
+include file := assign-2.ajnin
+(a2) --ru-- (b2)
+
+pool ho := .1
+pool hoo |= (a2) (b15)

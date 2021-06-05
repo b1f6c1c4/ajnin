@@ -1,0 +1,44 @@
+> # Copyright (C) 2021 b1f6c1c4
+> #
+> # This file is part of ajnin.
+> #
+> # ajnin is free software: you can redistribute it and/or modify it under the
+> # terms of the GNU Affero General Public License as published by the Free
+> # Software Foundation, version 3.
+> #
+> # ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+> # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+> # FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+> # more details.
+> #
+> # You should have received a copy of the GNU Affero General Public License
+> # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
+> 
+
+list a ::= useless
+list b ::= by1 by2
+foreach a * b {
+    (fake) << {
+        template tmp1 list a
+            >> ($a-s1) also[>> ($a-s2) !] >> ($a-s3)
+        template tmp1 list a
+            >> ($a-t1) also[>> ($a-t2)] >> ($a-t3) !
+        template tmp1 list a ($a-s2)
+            --ru&v="$a-$b"-- ($a-$b)
+    }
+}
+
+template tmp2 list k
+    <tmp1> "$k-o"
+
+template tmp3 list k [
+    (3$k)
+    ()
+] >> ($k-ir)
+    <tmp1> "$k-o" !
+
+(gather) << {
+    (obj1) <tmp1> "tmp1"
+    (obj2) <tmp2> "tmp2"
+    (obj3) <tmp3> "tmp3"
+}

@@ -1,0 +1,50 @@
+> # Copyright (C) 2021 b1f6c1c4
+> #
+> # This file is part of ajnin.
+> #
+> # ajnin is free software: you can redistribute it and/or modify it under the
+> # terms of the GNU Affero General Public License as published by the Free
+> # Software Foundation, version 3.
+> #
+> # ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+> # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+> # FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+> # more details.
+> #
+> # You should have received a copy of the GNU Affero General Public License
+> # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
+> 
+
+list a ::=
+    += 2 a
+    += 3 b
+    += 3 c
+    += 1 d
+    += 4 e
+    += 2 f
+
+list a uniq
+
+foreach a {
+    ($a-$a0) >> (x)
+}
+
+list a ::=
+    += 1 g
+    += 1 h
+list a sort
+
+foreach a {
+    ($a-$a0) >> (y)
+}
+
+clear list a
+
+list a ::=
+    += 3 i
+    += 2 j
+list a sort uniq
+
+foreach a {
+    ($a-$a0) >> (z)
+}

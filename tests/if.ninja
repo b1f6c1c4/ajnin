@@ -14,14 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
 
-add_test(NAME help COMMAND ajnin --help)
-set_tests_properties(help PROPERTIES PASS_REGULAR_EXPRESSION "GNU Affero")
-
-file(GLOB tests "*.ninja")
-foreach(src ${tests})
-    get_filename_component(T ${src} NAME_WLE)
-    add_test(NAME ${T}:exe WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            COMMAND ajnin --bare ${T}.ajnin -o ${CMAKE_CURRENT_BINARY_DIR}/${T}.ninja)
-    add_test(NAME ${T}:cmp COMMAND ${CMAKE_COMMAND} -E compare_files
-            ${CMAKE_CURRENT_SOURCE_DIR}/${T}.ninja ${CMAKE_CURRENT_BINARY_DIR}/${T}.ninja)
-endforeach()
+build p: phony s
+build q: phony s
+build r: phony p
+build s: phony p

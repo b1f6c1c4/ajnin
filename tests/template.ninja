@@ -1,0 +1,54 @@
+# Copyright (C) 2021 b1f6c1c4
+#
+# This file is part of ajnin.
+#
+# ajnin is free software: you can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License as published by the Free
+# Software Foundation, version 3.
+#
+# ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+# more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
+
+build gather: phony tmp1-by1 tmp1-by2 tmp1-s3 tmp1-t2 tmp2-o-by1 tmp2-o-by2 tmp2-o-s3 tmp2-o-t2
+build tmp1-by1: ru tmp1-s2
+    v = tmp1-by1
+
+build tmp1-by2: ru tmp1-s2
+    v = tmp1-by2
+
+build tmp1-s1: phony obj1
+build tmp1-s2: phony tmp1-s1
+build tmp1-s3: phony tmp1-s1
+build tmp1-t1: phony obj1
+build tmp1-t2: phony tmp1-t1
+build tmp1-t3: phony tmp1-t1
+build tmp2-o-by1: ru tmp2-o-s2
+    v = tmp2-o-by1
+
+build tmp2-o-by2: ru tmp2-o-s2
+    v = tmp2-o-by2
+
+build tmp2-o-s1: phony obj2
+build tmp2-o-s2: phony tmp2-o-s1
+build tmp2-o-s3: phony tmp2-o-s1
+build tmp2-o-t1: phony obj2
+build tmp2-o-t2: phony tmp2-o-t1
+build tmp2-o-t3: phony tmp2-o-t1
+build tmp3-ir: phony 3tmp3 obj3
+build tmp3-o-by1: ru tmp3-o-s2
+    v = tmp3-o-by1
+
+build tmp3-o-by2: ru tmp3-o-s2
+    v = tmp3-o-by2
+
+build tmp3-o-s1: phony tmp3-ir
+build tmp3-o-s2: phony tmp3-o-s1
+build tmp3-o-s3: phony tmp3-o-s1
+build tmp3-o-t1: phony tmp3-ir
+build tmp3-o-t2: phony tmp3-o-t1
+build tmp3-o-t3: phony tmp3-o-t1
