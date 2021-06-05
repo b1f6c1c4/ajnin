@@ -41,7 +41,7 @@ namespace parsing {
     struct rule_t {
         S name;
         MS<S> vars;
-        Ss ideps;
+        Ss ideps, iideps;
 
         rule_t &operator+=(const rule_t &o);
     };
@@ -126,6 +126,7 @@ namespace parsing {
         S _current_artifact{};
         S _current_value{};
         template_t *_current_template{};
+        bool _is_current_rule_2{};
         bool _is_pipeGroup{};
 
         SS _prolog, _epilog;

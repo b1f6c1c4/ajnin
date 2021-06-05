@@ -74,6 +74,7 @@ ListEnum: '::=' -> mode(listItem);
 ListEnumItem: '+=' -> mode(listItem);
 ListEnumRItem: '-=' -> mode(listItem);
 RuleAppend: '|=';
+RuleAppend2: '||=';
 
 Times: '*';
 Exclamation: '!';

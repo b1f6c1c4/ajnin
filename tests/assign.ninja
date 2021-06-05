@@ -17,23 +17,23 @@
 build b0: ru a0
     pool = po
 
-build b1: ru a1 | r1 r2 r3
+build b1: ru a1 | r1 r2 r3 || rr1 rr3
     a = ruarua
     b = x
     pool = ho
 
-build b12: ru a12 | r1 r2 r3
+build b12: ru a12 | r1 r2 r3 || rr1 rr3
     b = x
 
-build b15: ru a15 | r1 r2 r3
+build b15: ru a15 | r1 r2 r3 || rr1 rr3
     a = xx
     b = x
     pool = hoo
 
-build b2: ru a2 | r1 r3
+build b2: ru a2 | r1 r3 || rr1 rr3
     a = ha
 
-build z: ru b1 b12 b15 | r1 r3
+build z: ru b1 b12 b15 | r1 r3 || rr1 rr3
     a = rua
     pool = po
 

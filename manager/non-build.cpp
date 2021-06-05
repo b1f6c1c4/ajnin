@@ -95,6 +95,8 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
     for (auto t : ctx->Token())
         rules.emplace_back(t->getText());
 
+    _is_current_rule_2 = ctx->RuleAppend2();
+
     if (rules.empty()) {
         _current_rule = &_current->zrule;
         visitChildren(ctx);
@@ -198,6 +200,8 @@ antlrcpp::Any manager::visitCollectOperation(TParser::CollectOperationContext *c
         _current->app->vars[k] = v;
     for (auto &dep : rule.ideps)
         _current->app->ideps.insert(dep);
+    for (auto &dep : rule.iideps)
+        _current->app->iideps.insert(dep);
 
     ctx->stage()->accept(this);
     _current->app->art = std::move(_current_artifact);

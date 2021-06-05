@@ -95,7 +95,7 @@ conditionalStmt: ifStmt nl;
 
 ifStmt: KIf (IsEmpty | IsNonEmpty) Dollar SubID stmts (KElse (ifStmt | stmts))?;
 
-ruleStmt: KRule Token* (RuleAppend stage+ | assignment+) nl;
+ruleStmt: KRule Token* ((RuleAppend | RuleAppend2) stage+ | assignment+) nl;
 
 includeStmt: KInclude KList ID ListSearch Path;
 

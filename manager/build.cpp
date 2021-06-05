@@ -111,8 +111,12 @@ antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
 
     auto [s, glob] = expand(s0);
     if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
-    if (_current_rule)
-        _current_rule->ideps.insert(s);
+    if (_current_rule) {
+        if (!_is_current_rule_2)
+            _current_rule->ideps.insert(s);
+        else
+            _current_rule->iideps.insert(s);
+    }
     _current_artifact = std::move(s);
     _is_pipeGroup = false;
     return {};
@@ -139,6 +143,8 @@ antlrcpp::Any manager::visitOperation(TParser::OperationContext *ctx) {
         _current_build->vars[k] = v;
     for (auto &dep : rule.ideps)
         _current_build->ideps.insert(dep);
+    for (auto &dep : rule.iideps)
+        _current_build->iideps.insert(dep);
 
     ctx->stage()->accept(this);
     _current_build->art = _current_artifact;

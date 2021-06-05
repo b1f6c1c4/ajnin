@@ -35,6 +35,8 @@ rule_t &rule_t::operator+=(const rule_t &o) {
         vars[k] = v;
     for (auto &dep : o.ideps)
         ideps.insert(dep);
+    for (auto &dep : o.iideps)
+        iideps.insert(dep);
     return *this;
 }
 

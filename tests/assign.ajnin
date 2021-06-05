@@ -20,8 +20,10 @@ pool poo |= (a2) (b15)
 (a0) --ru-- (b0)
 
 rule |= (r3)
+rule ||= (rr3)
 rule &a="k"
 rule ru |= (r1)
+rule ru ||= (rr1)
 rule ru &a="rua"
 
 (z) --ru<< {
