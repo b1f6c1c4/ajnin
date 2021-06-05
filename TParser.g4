@@ -123,7 +123,7 @@ pipeStmt: (pipe | stage) (Exclamation | NL1? templateInst)? nl;
 
 pipeGroup: Bra NL1? artifact* Ket;
 
-artifact: (stage | pipe) Tilde? NL1?;
+artifact: (stage | pipe) (Tilde Tilde?)? NL1?;
 
 pipe: (stage (NL1? alsoGroup)* | pipeGroup) operAlso;
 

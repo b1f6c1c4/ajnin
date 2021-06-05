@@ -16,7 +16,7 @@
 
 build b: phony a
 build d: phony c e
-build g: phony d e | b f
+build g: phony d e | b f || o
 build h: phony g
 build i: phony g
 build k: phony d

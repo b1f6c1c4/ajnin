@@ -55,6 +55,8 @@ pbuild_t manager::ctx_t::make_build() const {
     auto pb = prev ? prev->make_build() : std::make_shared<build_t>();
     for (auto &dep : ideps)
         pb->ideps.insert(dep);
+    for (auto &dep : iideps)
+        pb->iideps.insert(dep);
     return pb;
 }
 
@@ -74,6 +76,7 @@ manager::ctx_t manager::ctx_t::save() const {
         for (auto &[k, v] : p.rules)
             ctx.rules[k] += v;
         ctx.ideps.merge(p.ideps);
+        ctx.iideps.merge(p.iideps);
     }
     return ctx;
 }

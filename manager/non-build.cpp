@@ -145,6 +145,7 @@ antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *c
             _current->zrule = rule_t{};
             _current->rules.clear();
             _current->ideps.clear();
+            _current->iideps.clear();
             ii.top()++;
         }
 
@@ -227,6 +228,7 @@ antlrcpp::Any manager::visitListGroupStmt(TParser::ListGroupStmtContext *ctx) {
         _current->zrule = rule_t{};
         _current->rules.clear();
         _current->ideps.clear();
+        _current->iideps.clear();
     }
     _depth--;
 

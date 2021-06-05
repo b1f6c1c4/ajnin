@@ -78,10 +78,17 @@ antlrcpp::Any manager::visitPipeGroup(TParser::PipeGroupContext *ctx) {
 // _current_artifact will be set.
 antlrcpp::Any manager::visitArtifact(TParser::ArtifactContext *ctx) {
     visitChildren(ctx);
-    if (!ctx->Tilde())
-        _current_build->deps.emplace_back(_current_artifact), _current_build->dirty = true;
-    else
-        _current_build->ideps.insert(_current_artifact);
+    switch (ctx->Tilde().size()) {
+        case 0:
+            _current_build->deps.emplace_back(_current_artifact), _current_build->dirty = true;
+            break;
+        case 1:
+            _current_build->ideps.insert(_current_artifact);
+            break;
+        case 2:
+            _current_build->iideps.insert(_current_artifact);
+            break;
+    }
     return {};
 }
 
@@ -277,6 +284,10 @@ void manager::apply_template(const S &s0, const SS &args, SS *parts) {
         for (const auto &s : b.ideps)
             next.emplace(s.empty() ? _current_value : spatch(s));
         b.ideps = std::move(next);
+        next = {};
+        for (const auto &s : b.iideps)
+            next.emplace(s.empty() ? _current_value : spatch(s));
+        b.iideps = std::move(next);
         for (auto &[k, v] : b.vars)
             v = spatch(v);
         b.art = spatch(b.art);

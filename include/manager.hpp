@@ -61,7 +61,7 @@ namespace parsing {
         S art;
         S rule;
         SS deps;
-        Ss ideps;
+        Ss ideps, iideps;
         MS<S> vars;
         bool dirty{};
 
@@ -76,7 +76,7 @@ namespace parsing {
             MC<list_item_t *> ass;
             rule_t zrule;
             MS<rule_t> rules;
-            Ss ideps;
+            Ss ideps, iideps;
             pbuild_t app;
             bool app_also;
             std::optional<std::filesystem::path> cwd;
@@ -86,7 +86,7 @@ namespace parsing {
             [[nodiscard]] pbuild_t make_build() const;
             [[nodiscard]] std::filesystem::path get_cwd() const;
 
-            // Note: Only ass, zrule, rules, ideps are saved.
+            // Note: Only ass, zrule, rules, ideps, iideps are saved.
             [[nodiscard]] ctx_t save() const;
         };
         struct ctx_guard {

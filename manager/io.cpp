@@ -136,6 +136,11 @@ void manager::dump(std::ostream &os, bool bare) {
             for (auto &dep : pb->ideps)
                 os << " " << manager::expand_dollar(dep);
         }
+        if (!pb->iideps.empty()) {
+            os << " ||";
+            for (auto &dep : pb->iideps)
+                os << " " << manager::expand_dollar(dep);
+        }
         if (!pb->vars.empty() || _pools.contains(art)) {
             os << '\n';
             for (auto &[va, vl] : pb->vars)
