@@ -1,9 +1,25 @@
 " ajnin build file syntax.
 " Language: https://github.com/b1f6c1c4/ajnin
+"
+" Copyright (C) 2021 b1f6c1c4
+"
+" This file is part of ajnin.
+"
+" ajnin is free software: you can redistribute it and/or modify it under the
+" terms of the GNU Affero General Public License as published by the Free
+" Software Foundation, version 3.
+"
+" ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+" WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+" FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+" more details.
+"
+" You should have received a copy of the GNU Affero General Public License
+" along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
 
-" if exists("b:current_syntax")
-"   finish
-" endif
+if exists("b:current_syntax")
+  finish
+endif
 
 let s:cpo_save = &cpo
 set cpo&vim
