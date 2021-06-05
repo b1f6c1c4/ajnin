@@ -269,9 +269,10 @@ void manager::apply_template(const S &s0, const SS &args, SS *parts) {
         }
         return std::move(s);
     };
+    auto prev_artifact = std::move(_current_artifact);
     auto patch = [&](build_t b) {
         for (auto &s : b.deps)
-            s = s.empty() ? s = _current_artifact : spatch(s);
+            s = s.empty() ? s = prev_artifact : spatch(s);
         Ss next;
         for (const auto &s : b.ideps)
             next.emplace(s.empty() ? _current_value : spatch(s));
@@ -290,7 +291,7 @@ void manager::apply_template(const S &s0, const SS &args, SS *parts) {
     }
 
     for (auto &nxt : tmpl.nexts) {
-        _current_artifact = spatch(nxt.art);
+        _current_artifact = nxt.art.empty() ? prev_artifact : spatch(nxt.art);
         SS na;
         for (auto &a : nxt.args)
             na.emplace_back(spatch(a));
@@ -298,13 +299,14 @@ void manager::apply_template(const S &s0, const SS &args, SS *parts) {
         apply_template(nxt.name, na, nxt.cas ? parts : &blackhole);
     }
 
-    for (auto &art : tmpl.arts) {
-        _current_artifact = spatch(art);
-        if (!parts)
-            append_artifact();
-        else
-            parts->emplace_back(art);
-    }
+    if (tmpl.nexts.empty())
+        for (auto &art : tmpl.arts) {
+            _current_artifact = spatch(art);
+            if (!parts)
+                append_artifact();
+            else
+                parts->emplace_back(art);
+        }
 
     _current_artifact = {};
     _current_build = nullptr;
