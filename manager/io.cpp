@@ -52,17 +52,63 @@ antlrcpp::Any manager::visitFileStmt(TParser::FileStmtContext *ctx) {
     auto [s, flag] = expand(s0);
     if (flag) throw std::runtime_error{ "Glob not allowed in " + s0 };
 
+    _locations.push_front(ctx->getStart()->getInputStream()->getSourceName() +
+                          ":" + std::to_string(ctx->KInclude()->getSymbol()->getLine()) +
+                          ":" + std::to_string(ctx->Path()->getSymbol()->getStartIndex() + 1));
     load_file(s, true);
+    _locations.pop_front();
 
     return {};
 }
 
+struct error_listener : antlr4::ANTLRErrorListener {
+    const SS *prev_locations;
+
+    void syntaxError(antlr4::Recognizer *recognizer, antlr4::Token *offendingSymbol,
+                     size_t line, size_t charPositionInLine, const std::string &msg,
+                     std::exception_ptr e) override {
+        for (auto &loc : *prev_locations) {
+            if (&loc == &prev_locations->front())
+                std::cerr << "In file included from ";
+            else
+                std::cerr << "                 from ";
+            std::cerr << loc;
+            if (&loc != &prev_locations->back())
+                std::cerr << ",\n";
+            else
+                std::cerr << ":\n";
+        }
+        std::cerr << recognizer->getInputStream()->getSourceName();
+        std::cerr << ":" << line << ":" << charPositionInLine + 1 << ": ";
+        if (auto lexer = dynamic_cast<antlr4::Lexer *>(recognizer); lexer)
+            std::cerr << "\e[31mlexical error\e[0m: ";
+        if (auto parser = dynamic_cast<antlr4::Parser *>(recognizer); parser)
+            std::cerr << "\e[31msyntax error\e[0m: ";
+        std::cerr << msg << "\n";
+    }
+    void reportAmbiguity(antlr4::Parser *recognizer, const antlr4::dfa::DFA &dfa, size_t startIndex,
+                         size_t stopIndex, bool exact, const antlrcpp::BitSet &ambigAlts,
+                         antlr4::atn::ATNConfigSet *configs) override { }
+    void reportAttemptingFullContext(antlr4::Parser *recognizer, const antlr4::dfa::DFA &dfa, size_t startIndex,
+                                     size_t stopIndex, const antlrcpp::BitSet &conflictingAlts,
+                                     antlr4::atn::ATNConfigSet *configs) override { }
+    void reportContextSensitivity(antlr4::Parser *recognizer, const antlr4::dfa::DFA &dfa, size_t startIndex,
+                                  size_t stopIndex, size_t prediction,
+                                  antlr4::atn::ATNConfigSet *configs) override { }
+};
+
 void manager::parse(antlr4::CharStream &is) {
+    error_listener el{};
+    el.prev_locations = &_locations;
     using namespace antlr4;
     TLexer lexer{ &is };
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(&el);
     CommonTokenStream tokens{ &lexer };
     tokens.fill();
     TParser parser{ &tokens };
+    parser.removeErrorListeners();
+    parser.addErrorListener(&el);
     auto res = parser.main();
     if (parser.getNumberOfSyntaxErrors())
         throw std::runtime_error{ "Syntax error detected." };

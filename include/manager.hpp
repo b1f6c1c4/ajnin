@@ -118,6 +118,7 @@ namespace parsing {
         MS<pbuild_t> _builds;
         MS<template_t> _templates;
         MS<S> _pools;
+        SS _locations;
 
         ctx_t *_current{};
         list_t *_current_list{};
