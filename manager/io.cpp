@@ -157,8 +157,6 @@ void manager::dump(std::ostream &os, const SS &slices, const SS &solos, bool bar
         the_slices.emplace_back(s);
     for (auto &s : solos)
         the_solos.emplace_back(s);
-    if (!slices.empty() || !solos.empty())
-        bare = true;
 
     S max_deps_art;
     size_t max_deps{};
