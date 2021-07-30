@@ -221,7 +221,7 @@ namespace parsing {
 
         void load_file(const std::string &str, bool flat = false);
 
-        void dump(std::ostream &os, bool bare = false);
+        void dump(std::ostream &os, const SS &slices, const SS &solos, bool bare = false);
 
         static bool collect_deps(const S &fn, bool debug);
     };

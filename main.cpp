@@ -16,6 +16,7 @@
  */
 
 #include <iostream>
+#include <deque>
 
 #include "manager.hpp"
 
@@ -24,11 +25,13 @@ using namespace std::string_literals;
 int main(int argc, char *argv[]) {
     auto debug = false, quiet = false, bare = false;
     std::string in, out;
+    std::deque<std::string> slices, solos;
 
     argc--, argv++;
     for (; argc; argc--, argv++) {
         if (*argv == "-h"s || *argv == "--help"s) {
             std::cout << "Usage: ajnin [-h|--help] [-d|--debug] [-q|--quiet] [-o <output>] [<file>]\n";
+            std::cout << "             [-s|--slice <regex>]... [-S|--solo <regex>]...\n";
             std::cout << R"(
 Copyright (C) 2021 b1f6c1c4
 
@@ -56,6 +59,10 @@ along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
             quiet = true;
         else if (*argv == "-o"s)
             out = argv[1], argc--, argv++;
+        else if (*argv == "-s"s || *argv == "--slice"s)
+            slices.emplace_back(argv[1]), argc--, argv++;
+        else if (*argv == "-S"s || *argv == "--solo"s)
+            solos.emplace_back(argv[1]), argc--, argv++;
         else if (!in.empty())
             throw std::runtime_error{ "Too many input files" };
         else
@@ -75,9 +82,9 @@ along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
     }
 
     if (out.empty()) {
-        mgr.dump(std::cout, bare);
+        mgr.dump(std::cout, slices, solos, bare);
     } else {
         std::ofstream ofs{ out };
-        mgr.dump(ofs, bare);
+        mgr.dump(ofs, slices, solos, bare);
     }
 }

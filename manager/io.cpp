@@ -17,6 +17,7 @@
 
 #include "manager.hpp"
 
+#include <boost/regex.hpp>
 #include <filesystem>
 #include <iostream>
 #include "TLexer.h"
@@ -147,9 +148,17 @@ void manager::load_file(const std::string &str, bool flat) {
 static constexpr char g_ninja_prolog1[] = "# ajnin deps: ";
 static constexpr char g_ninja_prolog2[] = "# No more ajnin deps.";
 
-void manager::dump(std::ostream &os, bool bare) {
+void manager::dump(std::ostream &os, const SS &slices, const SS &solos, bool bare) {
     if (!_quiet)
         std::cerr << "ajnin: Emitting " << _builds.size() << " builds\n";
+
+    std::deque<boost::regex> the_slices, the_solos;
+    for (auto &s : slices)
+        the_slices.emplace_back(s);
+    for (auto &s : solos)
+        the_solos.emplace_back(s);
+    if (!slices.empty() || !solos.empty())
+        bare = true;
 
     S max_deps_art;
     size_t max_deps{};
@@ -173,8 +182,15 @@ void manager::dump(std::ostream &os, bool bare) {
     for (auto &t : _prolog)
         os << manager::expand_dollar(t) << '\n';
 
+    size_t cnt{};
     for (auto &[art, pb] : _builds) {
-        os << "build " << manager::expand_dollar(art) << ": " << manager::expand_dollar(pb->rule);
+        auto the_art = manager::expand_dollar(art);
+        auto ma = [&](const boost::regex &re) { return boost::regex_match(the_art, re); };
+        if (!the_solos.empty() && std::none_of(the_solos.begin(), the_solos.end(), ma)) continue;
+        if (!the_slices.empty() && std::any_of(the_slices.begin(), the_slices.end(), ma)) continue;
+
+        cnt++;
+        os << "build " << the_art << ": " << manager::expand_dollar(pb->rule);
         for (auto &dep : pb->deps)
             os << " " << manager::expand_dollar(dep);
         if (!pb->ideps.empty()) {
@@ -199,6 +215,9 @@ void manager::dump(std::ostream &os, bool bare) {
 
     for (auto &t : _epilog)
         os << manager::expand_dollar(t) << '\n';
+
+    if (!_quiet)
+        std::cerr << "ajnin: Emitted " << cnt << " out of " << _builds.size() << " builds\n";
 }
 
 bool manager::collect_deps(const S &fn, bool debug) {
