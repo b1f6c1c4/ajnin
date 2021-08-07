@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     auto debug = false, quiet = false, bare = false;
     std::string in, out;
     std::deque<std::string> slices, solos;
-    std::vector<const char *> ninja_args;
+    std::vector<const char *> ninja_args{ "ninja" };
 
     bool ninja;
     if (std::string_view{ *argv }.ends_with("ajnin"))
