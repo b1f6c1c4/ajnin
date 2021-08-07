@@ -185,7 +185,9 @@ void manager::dump(std::ostream &os, const SS &slices, const SS &solos, bool bar
         auto the_art = manager::expand_dollar(art);
         auto ma = [&](const boost::regex &re) { return boost::regex_match(the_art, re); };
         if (!the_solos.empty() && std::none_of(the_solos.begin(), the_solos.end(), ma)) continue;
-        if (!the_slices.empty() && std::any_of(the_slices.begin(), the_slices.end(), ma)) continue;
+        if (!the_slices.empty() && std::any_of(the_slices.begin(), the_slices.end(), ma))
+            if (std::filesystem::exists(the_art))
+                continue;
 
         cnt++;
         os << "build " << the_art << ": " << manager::expand_dollar(pb->rule);
