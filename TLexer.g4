@@ -88,7 +88,9 @@ Token: LETTER ((LETTER | '0'..'9' | '_' | '-' | '.')* (LETTER | '0'..'9'))?;
 TemplateName: '<' LETTER ((LETTER | '0'..'9' | '_' | '-' | '.')* (LETTER | '0'..'9'))? '>';
 
 OpenCurly: '{';
+OpenDoubleCurly: '{{';
 CloseCurly: '}';
+CloseDoubleCurly: '}}';
 Bra: '[';
 Ket: ']';
 
@@ -117,6 +119,7 @@ PrePathText: . -> more, mode(path);
 mode path;
 Path: NL1 -> mode(DEFAULT_MODE);
 OpenCurlyPath: ' {' NL1 -> mode(DEFAULT_MODE);
+OpenDoubleCurlyPath: ' {{' NL1 -> mode(DEFAULT_MODE);
 PathText: . -> more;
 
 mode stage;

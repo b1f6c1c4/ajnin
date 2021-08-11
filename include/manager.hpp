@@ -90,9 +90,15 @@ namespace parsing {
             [[nodiscard]] ctx_t save() const;
         };
         struct ctx_guard {
-            explicit ctx_guard(ctx_t *&p) : value{ p }, ptr{ p } { ptr = &value; }
-            ~ctx_guard() { ptr = value.prev; }
+            explicit ctx_guard(ctx_t *&p, bool enable = true) : ena{ enable }, value{ p }, ptr{ p } {
+                if (ena) ptr = &value;
+            }
+            ~ctx_guard() {
+                if (ena) ptr = value.prev;
+            }
+            [[nodiscard]] operator bool() const { return ena; }
         private:
+            bool ena;
             ctx_t value;
             ctx_t *&ptr;
         };

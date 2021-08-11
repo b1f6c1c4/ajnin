@@ -116,7 +116,7 @@ antlrcpp::Any manager::visitRuleStmt(TParser::RuleStmtContext *ctx) {
 }
 
 antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *ctx) {
-    ctx_guard next{ _current };
+    ctx_guard next{ _current, ctx->stmts() != nullptr };
 
     auto ids = ctx->ID();
 
@@ -143,11 +143,16 @@ antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *c
                     std::cerr << " $" << as_id(id) << "=" << _current->ass[as_id(id)]->name;
                 std::cerr << '\n';
             }
-            ctx->stmts()->accept(this);
-            _current->zrule = rule_t{};
-            _current->rules.clear();
-            _current->ideps.clear();
-            _current->iideps.clear();
+            if (ctx->stmts())
+                ctx->stmts()->accept(this);
+            else
+                ctx->fragmentStmts()->accept(this);
+            if (next) {
+                _current->zrule = rule_t{};
+                _current->rules.clear();
+                _current->ideps.clear();
+                _current->iideps.clear();
+            }
             ii.top()++;
         }
 
@@ -214,25 +219,34 @@ antlrcpp::Any manager::visitListGroupStmt(TParser::ListGroupStmtContext *ctx) {
     if (_lists.contains(c))
         throw std::runtime_error{ "List "s + c + " already exists" };
 
-    auto s0 = ctx->OpenCurlyPath()->getText();
-    if (!s0.ends_with(" {\n")) throw std::runtime_error{ "Lexer messed up with  {\\n" };
-    s0.erase(s0.end() - 3, s0.end());
+    std::string s0;
+    if (ctx->OpenCurlyPath()) {
+        s0 = ctx->OpenCurlyPath()->getText();
+        if (!s0.ends_with(" {\n")) throw std::runtime_error{ "Lexer messed up with  {\\n" };
+        s0.erase(s0.end() - 3, s0.end());
+    } else {
+        s0 = ctx->OpenDoubleCurlyPath()->getText();
+        if (!s0.ends_with(" {{\n")) throw std::runtime_error{ "Lexer messed up with  {{\\n" };
+        s0.erase(s0.end() - 4, s0.end());
+    }
 
     _current_list = &_lists[c];
     _current_list->name = c;
 
     list_search(s0);
 
-    ctx_guard next{ _current };
+    ctx_guard next{ _current, ctx->OpenCurlyPath() != nullptr };
     _depth++;
     for (auto &item : _current_list->items) {
         _current->ass[c] = &item;
         for (auto &st : ctx->stmt())
             st->accept(this);
-        _current->zrule = rule_t{};
-        _current->rules.clear();
-        _current->ideps.clear();
-        _current->iideps.clear();
+        if (next) {
+            _current->zrule = rule_t{};
+            _current->rules.clear();
+            _current->ideps.clear();
+            _current->iideps.clear();
+        }
     }
     _depth--;
 

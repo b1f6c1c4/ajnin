@@ -87,6 +87,8 @@ stmt: debugStmt | clearStmt | conditionalStmt | ruleStmt
 
 stmts: OpenCurly nl stmt+ CloseCurly;
 
+fragmentStmts: OpenDoubleCurly nl stmt+ CloseDoubleCurly;
+
 debugStmt: KPrint KList ID nl;
 
 clearStmt: KClear KList ID nl;
@@ -111,13 +113,14 @@ listEnumStmtItem: (ListEnumItem | ListEnumRItem) ListItemToken+ ListItemNL;
 
 listInlineEnumStmt: ListEnum ListItemToken+ ListItemNL nl?;
 
-foreachGroupStmt: KForeach ID (Times ID)* stmts nl;
+foreachGroupStmt: KForeach ID (Times ID)* (stmts | fragmentStmts) nl;
 
 collectGroupStmt: (Bra collectOperation Ket KAlso | collectOperation) (collectGroupStmt | stmts nl);
 
 collectOperation: stage (Single Token assignment*)? Append;
 
-listGroupStmt: KForeach KList ID ListSearch OpenCurlyPath nl? stmt+ CloseCurly nl;
+listGroupStmt: KForeach KList ID ListSearch (OpenCurlyPath nl? stmt+ CloseCurly
+    | OpenDoubleCurlyPath nl? stmt+ CloseDoubleCurly) nl;
 
 pipeStmt: (pipe | stage) (Exclamation | NL1? templateInst)? nl;
 
