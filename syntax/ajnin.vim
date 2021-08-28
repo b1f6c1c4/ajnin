@@ -83,6 +83,7 @@ syn match ajninAssignment "&[^+=]\++\?="
 
 syn region ajninPath start="(" end=")" contains=ajninListRef,ajninGlob,ajninEnv,ajninDollar
 syn region ajninPath start="\(:=\)\@<=" end=" \({$\)\@=\|$" contains=ajninListRef,ajninGlob,ajninEnv,ajninDollar
+syn region ajninPath start="\(:=\)\@<=" end=" \({{$\)\@=\|$" contains=ajninListRef,ajninGlob,ajninEnv,ajninDollar
 
 syn region ajninSingleString start="'" skip="\$'" end="'" contains=ajninEnv,ajninDollar
 syn region ajninDoubleString start="\"" skip="\$\"" end="\"" contains=ajninListRef,ajninEnv,ajninDollar
