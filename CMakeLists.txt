@@ -15,12 +15,15 @@
 # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.17)
-project(ajnin)
+project(ajnin VERSION 0.1)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+configure_file(include/config.h.in include/config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 include(CTest)
 enable_testing()

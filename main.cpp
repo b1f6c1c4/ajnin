@@ -19,18 +19,21 @@
 #include <deque>
 #include <ext/stdio_filebuf.h>
 
+#include "config.h"
 #include "manager.hpp"
 
 using namespace std::string_literals;
 
 void usage() {
+    std::cout << "ajnin " PROJECT_VERSION "\n\n";
     std::cout << "Usage: ajnin [-h|--help] [-q|--quiet] [-C <chdir>] [-d|--debug] [-o <output>]\n";
-    std::cout << "             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare] [<input>]\n";
+    std::cout << "             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]\n";
+    std::cout << "             [<input>]\n";
     std::cout << "Note: -s and -S implies --bare, which cannot be override\n";
     std::cout << "\n";
     std::cout << "Usage: an    [-h|--help] [-q|--quiet] [-C <chdir>] [-o <build.ninja>]\n";
-    std::cout << "             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare] [-f <build.ajnin>]\n";
-    std::cout << "             [<ninja command line arguments>]...\n";
+    std::cout << "             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]\n";
+    std::cout << "             [-f <build.ajnin>] [<ninja command line arguments>]...\n";
     std::cout << "Note: -s and -S implies -o '', but can be override\n";
     std::cout << "\n";
     std::cout << R"(
@@ -70,7 +73,7 @@ int main(int argc, char *argv[]) {
     }
     argc--, argv++;
     for (; argc; argc--, argv++) {
-        if (*argv == "-h"s || *argv == "--help"s) {
+        if (*argv == "-h"s || *argv == "--help"s || *argv == "--version"s) {
             usage();
             return 0;
         }

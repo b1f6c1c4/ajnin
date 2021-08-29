@@ -1,0 +1,7 @@
+#pragma once
+
+#define PROJECT_VERSION "v@PROJECT_VERSION@"
+
+#ifndef PROJECT_VERSION
+#define PROJECT_VERSION "(version unknown)"
+#endif
