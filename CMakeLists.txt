@@ -69,3 +69,5 @@ add_executable(ajnin main.cpp
         ${ANTLR_TParser_CXX_OUTPUTS})
 target_link_libraries(ajnin antlr4_static)
 target_link_libraries(ajnin boost_regex)
+
+install(TARGETS ajnin DESTINATION bin)
