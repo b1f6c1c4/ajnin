@@ -135,6 +135,8 @@ antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *c
         auto &li = _lists[c];
         if (li.items.empty()) return {};
 
+        if (ii.top() == li.items.size()) goto pop;
+
         _current->ass[c] = &li.items[ii.top()];
         if (ii.size() == ids.size()) {
             if (_debug) {
@@ -157,6 +159,7 @@ antlrcpp::Any manager::visitForeachGroupStmt(TParser::ForeachGroupStmtContext *c
         }
 
         if (ii.top() == li.items.size()) {
+            pop:
             ii.pop();
             if (ii.empty())
                 break;
