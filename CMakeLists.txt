@@ -90,6 +90,9 @@ add_custom_command(OUTPUT an.1
 add_custom_target(manual DEPENDS ajnin.1 an.1)
 
 install(TARGETS ajnin DESTINATION bin)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an DESTINATION bin)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ajnin.1 DESTINATION share/man)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an.1 DESTINATION share/man)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an DESTINATION bin/)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ajnin.1 DESTINATION share/man/)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an.1 DESTINATION share/man/)
+install(FILES indent/ajnin.vim DESTINATION share/vim/vimfiles/indent/)
+install(FILES syntax/ajnin.vim DESTINATION share/vim/vimfiles/syntax/)
+install(FILES LICENSE DESTINATION share/licenses/ajnin)
