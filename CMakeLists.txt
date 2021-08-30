@@ -70,4 +70,7 @@ add_executable(ajnin main.cpp
 target_link_libraries(ajnin antlr4_static)
 target_link_libraries(ajnin boost_regex)
 
+add_custom_target(link_target ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ajnin an)
+
 install(TARGETS ajnin DESTINATION bin)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an DESTINATION bin)
