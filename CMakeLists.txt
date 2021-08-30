@@ -86,7 +86,7 @@ add_custom_command(OUTPUT ajnin.1
 add_custom_command(OUTPUT an.1
         COMMAND pandoc ARGS -s -t man -o an.1 ${CMAKE_CURRENT_SOURCE_DIR}/man/an.md
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/man/an.md
-        COMMENT "Using pandoc to generate man page: ajnin.1")
+        COMMENT "Using pandoc to generate man page: an.1")
 add_custom_target(manual DEPENDS ajnin.1 an.1)
 
 install(TARGETS ajnin DESTINATION bin)
@@ -95,4 +95,4 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ajnin.1 DESTINATION share/man/)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an.1 DESTINATION share/man/)
 install(FILES indent/ajnin.vim DESTINATION share/vim/vimfiles/indent/)
 install(FILES syntax/ajnin.vim DESTINATION share/vim/vimfiles/syntax/)
-install(FILES LICENSE DESTINATION share/licenses/ajnin)
+install(FILES LICENSE DESTINATION share/licenses/ajnin/)
