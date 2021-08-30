@@ -18,49 +18,49 @@ and run **ninja(1)** with arguments passed thru.
 
 # OPTION
 
-**-h**, **--help**
+**-h**, `--help`
 : Show brief usage information.
 
-**-q**, **--quiet**
+**-q**, `--quiet`
 : Display less information during execution.
 
-**-d**, **--debug**
+**-d**, `--debug`
 : Display more information during execution.
 
 **-C** `<chdir>`
 : Run **ajnin** as if from that directory.
 
 **-o** `<output>`
-: Write **ninja(1)** configuration into file `<output>`.
+: Write **ninja(1)** configuration into file *`<output>`*.
 Defaults to **build.ninja**.
 If `<output>` is up-to-date
-(based on the previously-written **mtime** information in `<output>`),
+(based on the previously-written **mtime** information in *`<output>`*),
 no rewriting happens.
-See also **--bare**.
+See also **`--bare`**.
 If specified an empty string,
 configuration will be directly fed to **ninja** process without storing it on disk.
 
-**--bare**
-: Do *not* write `<input>`'s **mtime** into `<output>`.
+`--bare`
+: Do *not* write *`<input>`*'s **mtime** into *`<output>`*.
 This will make sure that any following invocation of
-**ajnin** `-o` `<output>` will *always* overwrite.
+*`ajnin -o <output>`* will always overwrite.
 
-**-s**, **--slice** `<regex>`
+**-s**, `--slice` `<regex>`
 : Skip some targets when generating configuration file base on the two conditions:
 (*both* of the two conditions must be satisfied for **ajnin** to skip the target)
-**1)** the target name matches `<regex>`;
+**1)** the target name matches *`<regex>`*;
 **2)** the target exists on disk.
-**--slice** implies **--bare**.
+**`--slice`** implies **`--bare`**.
 
-**-S**, **--solo** `<regex>`
-: Include only those targets whose name matches `<regex>`
+**-S**, `--solo` `<regex>`
+: Include only those targets whose name matches *`<regex>`*
 when generating configuration file.
-**--solo** implies **--bare**.
+**`--solo`** implies **`--bare`**.
 
 **-f** `<input>`
 : File containing **ajnin DSL** to be read from.
 Defaults to **build.ajnin**.
-If not specified, stdin will be used and **--bare** is assumed.
+If not specified, stdin will be used and **`--bare`** is assumed.
 
 # EXAMPLE
 
