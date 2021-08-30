@@ -72,5 +72,24 @@ target_link_libraries(ajnin boost_regex)
 
 add_custom_target(link_target ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ajnin an)
 
+if(NOT EXISTS ${PANDOC_EXECUTABLE})
+    find_program(PANDOC_EXECUTABLE pandoc)
+    mark_as_advanced(PANDOC_EXECUTABLE)
+    if(NOT EXISTS ${PANDOC_EXECUTABLE})
+        message(FATAL_ERROR "Pandoc not found. Install Pandoc or set cache variable PANDOC_EXECUTABLE.")
+    endif()
+endif()
+add_custom_command(OUTPUT ajnin.1
+        COMMAND pandoc ARGS -s -t man -o ajnin.1 ${CMAKE_CURRENT_SOURCE_DIR}/man/ajnin.md
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/man/ajnin.md
+        COMMENT "Using pandoc to generate man page: ajnin.1")
+add_custom_command(OUTPUT an.1
+        COMMAND pandoc ARGS -s -t man -o an.1 ${CMAKE_CURRENT_SOURCE_DIR}/man/an.md
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/man/an.md
+        COMMENT "Using pandoc to generate man page: ajnin.1")
+add_custom_target(manual DEPENDS ajnin.1 an.1)
+
 install(TARGETS ajnin DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an DESTINATION bin)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ajnin.1 DESTINATION share/man)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an.1 DESTINATION share/man)
