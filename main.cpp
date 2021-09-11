@@ -133,17 +133,17 @@ int main(int argc, char *argv[]) {
                 close(fds[0]);
                 close(fds[1]);
                 execvp("ninja", const_cast<char *const *>(ninja_args.data()));
-                return 127;
+                exit(127);
             }
             // I'm the child
             close(fds[0]);
             __gnu_cxx::stdio_filebuf<char> fb(fds[1], std::ios::out);
             std::ostream os{ &fb };
             execute(os);
-            return 0;
+            exit(0);
         } else { // Write to stdout
             execute(std::cout);
-            return 0;
+            exit(0);
         }
     } else {
         if (!parsing::manager::collect_deps(out, debug)) {
@@ -157,4 +157,5 @@ int main(int argc, char *argv[]) {
             execvp("ninja", const_cast<char *const *>(ninja_args.data()));
         }
     }
+    exit(0);
 }
