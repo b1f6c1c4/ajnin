@@ -70,7 +70,8 @@ add_executable(ajnin main.cpp
 target_link_libraries(ajnin antlr4_static)
 target_link_libraries(ajnin boost_regex)
 
-add_custom_target(link_target ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ajnin an)
+add_custom_target(link_target_an ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ajnin an)
+add_custom_target(link_target_sanity ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ajnin sanity)
 
 if(NOT EXISTS ${PANDOC_EXECUTABLE})
     find_program(PANDOC_EXECUTABLE pandoc)
@@ -87,12 +88,18 @@ add_custom_command(OUTPUT an.1
         COMMAND pandoc ARGS -s -t man -o an.1 ${CMAKE_CURRENT_SOURCE_DIR}/man/an.md
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/man/an.md
         COMMENT "Using pandoc to generate man page: an.1")
-add_custom_target(manual DEPENDS ajnin.1 an.1)
+add_custom_command(OUTPUT sanity.1
+        COMMAND pandoc ARGS -s -t man -o sanity.1 ${CMAKE_CURRENT_SOURCE_DIR}/man/sanity.md
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/man/sanity.md
+        COMMENT "Using pandoc to generate man page: sanity.1")
+add_custom_target(manual DEPENDS ajnin.1 an.1 sanity.1)
 
 install(TARGETS ajnin DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an DESTINATION bin/)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sanity DESTINATION bin/)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ajnin.1 DESTINATION share/man/)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/an.1 DESTINATION share/man/)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sanity.1 DESTINATION share/man/)
 install(FILES indent/ajnin.vim DESTINATION share/vim/vimfiles/indent/)
 install(FILES syntax/ajnin.vim DESTINATION share/vim/vimfiles/syntax/)
 install(FILES LICENSE DESTINATION share/licenses/ajnin/)

@@ -229,6 +229,8 @@ namespace parsing {
 
         void dump(std::ostream &os, const SS &slices, const SS &solos, bool bare = false);
 
+        void split_dump(const S &out, const SS &slices, const SS &solos, const SS &eps, size_t par);
+
         static bool collect_deps(const S &fn, bool debug);
     };
 }

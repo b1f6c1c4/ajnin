@@ -26,16 +26,20 @@ using namespace std::string_literals;
 
 void usage() {
     std::cout << "ajnin " PROJECT_VERSION "\n\n";
-    std::cout << "Usage: ajnin [-h|--help] [-q|--quiet] [-C <chdir>] [-d|--debug] [-o <output>]\n";
-    std::cout << "             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]\n";
-    std::cout << "             [<input>]\n";
+    std::cout << "Usage: ajnin  [-h|--help] [-q|--quiet] [-C <chdir>] [-d|--debug] [-o <output>]\n";
+    std::cout << "              [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]\n";
+    std::cout << "              [<input>]\n";
     std::cout << "Note: -s and -S implies --bare, which cannot be override\n";
     std::cout << "\n";
-    std::cout << "Usage: an    [-h|--help] [-q|--quiet] [-C <chdir>] [-o <build.ninja>]\n";
-    std::cout << "             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]\n";
-    std::cout << "             [-f <build.ajnin>] [<ninja command line arguments>]...\n";
+    std::cout << "Usage: an     [-h|--help] [-q|--quiet] [-C <chdir>] [-o <build.ninja>]\n";
+    std::cout << "              [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]\n";
+    std::cout << "              [-f <build.ajnin>] [<ninja command line arguments>]...\n";
     std::cout << "Note: -s and -S implies -o '', but can be override\n";
     std::cout << "\n";
+    std::cout << "Usage: sanity [-h|--help] [-q|--quiet] [-C <chdir>]\n";
+    std::cout << "              [-s|--slice <regex>]... [-S|--solo <regex>]...\n";
+    std::cout << "              [-f <build.ajnin>] [-o <sanity.d>]\n";
+    std::cout << "              [-j <parallelism>] [<regex>]...\n";
     std::cout << R"(
 Copyright (C) 2021 b1f6c1c4
 
@@ -60,12 +64,16 @@ int main(int argc, char *argv[]) {
     std::string in, out;
     std::deque<std::string> slices, solos;
     std::vector<const char *> ninja_args{ "ninja" };
+    parsing::SS sanity_args;
+    size_t parallelism{};
 
-    bool ninja;
+    bool ninja, sanity;
     if (std::string_view{ *argv }.ends_with("ajnin"))
-        ninja = false;
+        ninja = false, sanity = false;
     else if (std::string_view{ *argv }.ends_with("an"))
-        ninja = true, out = "build.ninja", in = "build.ajnin";
+        ninja = true, sanity = false, out = "build.ninja", in = "build.ajnin";
+    else if (std::string_view{ *argv }.ends_with("sanity"))
+        ninja = false, sanity = true, out = "sanity.d", in = "build.ajnin";
     else {
         std::cerr << "Unknown argv[0]: " << argv[0] << std::endl;
         usage();
@@ -97,14 +105,33 @@ int main(int argc, char *argv[]) {
             bare = true;
             if (ninja)
                 out = "";
-        } else if (ninja && *argv == "-f"s)
+        } else if ((ninja || sanity) && *argv == "-f"s)
             in = argv[1], argc--, argv++;
+        else if (sanity && *argv == "-j"s)
+            parallelism = std::stoi(argv[1]), argc--, argv++;
+        else if (sanity && (*argv)[0] == '-' && (*argv)[1] == 'j')
+            parallelism = std::stoi(*argv + 2);
         else if (ninja)
             ninja_args.push_back(argv[0]);
+        else if (sanity)
+            sanity_args.push_back(argv[0]);
         else if (!in.empty())
             throw std::runtime_error{ "Too many input files" };
         else
             in = argv[0];
+    }
+
+    if (sanity) {
+        if (!parallelism)
+            throw std::runtime_error{ "You forgot -j" };
+        parsing::manager mgr{ debug, quiet };
+        if (in.empty()) {
+            mgr.load_stream(std::cin);
+        } else {
+            mgr.load_file(in);
+        }
+        mgr.split_dump(out, slices, solos, sanity_args, parallelism);
+        exit(0);
     }
 
     auto execute = [&](std::ostream &os) {

@@ -66,4 +66,4 @@ Please refer to <https://github.com/b1f6c1c4/ajnin/tree/master/tests> for some D
 
 # SEE ALSO
 
-**an(1)**, **ninja(1)**
+**an(1)**, **sanity(1)**, **ninja(1)**

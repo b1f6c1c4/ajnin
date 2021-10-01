@@ -28,7 +28,7 @@ and run **ninja(1)** with arguments passed thru.
 : Display more information during execution.
 
 **-C** `<chdir>`
-: Run **ajnin** as if from that directory.
+: Run **an** as if from that directory.
 
 **-o** `<output>`
 : Write **ninja(1)** configuration into file *`<output>`*.

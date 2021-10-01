@@ -275,3 +275,148 @@ antlrcpp::Any manager::visitMetaStmt(TParser::MetaStmtContext *ctx) {
     }
     return {};
 }
+
+void manager::split_dump(const S &out, const SS &slices, const SS &solos, const SS &eps, size_t par) {
+    std::deque<boost::regex> the_slices, the_solos, the_eps;
+    for (auto &s : slices)
+        the_slices.emplace_back(s);
+    for (auto &s : solos)
+        the_solos.emplace_back(s);
+    for (auto &s : eps)
+        the_eps.emplace_back(s);
+    auto is_ignored = [&](const S &the_art) {
+        auto ma = [&](const boost::regex &re) { return boost::regex_match(the_art, re); };
+        if (!the_solos.empty() && std::none_of(the_solos.begin(), the_solos.end(), ma)) return true;
+        if (!the_slices.empty() && std::any_of(the_slices.begin(), the_slices.end(), ma))
+            if (std::filesystem::exists(the_art))
+                return true;
+        return false;
+    };
+
+    // none: Unassigned
+    // 0: Assigned to the common file
+    // 1 ~ par: Assigned to a split file
+    MS<size_t> assignment;
+    SS queue;
+    std::vector<size_t> cnts(par + 1);
+
+    if (!_quiet)
+        std::cerr << "ajnin: Finding endpoints from " << _builds.size() << " builds\n";
+
+    // Initial round-robin assignment
+    for (auto &[art, pb] : _builds) {
+        auto the_art = manager::expand_dollar(art);
+        if (is_ignored(the_art)) continue;
+        for (auto &re : the_eps) {
+            boost::smatch m;
+            if (!boost::regex_match(the_art, m, re)) continue;
+            auto s = m.size() >= 2 ? m[1] : m[0];
+            cnts[assignment[art] = 1 + (std::hash<S>{}(s) % par)]++;
+            queue.emplace_back(art);
+        }
+    }
+
+    if (!_quiet)
+        std::cerr << "ajnin: Spliting " << _builds.size() << " builds "
+                  << "with " << queue.size() << " endpoints into " << par << " files, "
+                  << "avg. " << queue.size() / par << " ep/file.\n";
+
+    // Adjusting assignment
+    while (!queue.empty()) {
+        auto art = queue.front();
+        queue.pop_front();
+        auto pb = _builds.at(art);
+        auto ass = assignment.at(art);
+
+        auto fix = [&](const S &dep) {
+            if (!_builds.contains(dep)) return;
+            if (is_ignored(manager::expand_dollar(dep))) return;
+            auto it = assignment.find(dep);
+            if (it == assignment.end()) {
+                assignment[dep] = ass;
+                cnts[ass]++;
+                queue.emplace_back(dep);
+            } else if (!it->second || it->second == ass) {
+                // do nothing
+            } else {
+                cnts[it->second]--;
+                it->second = 0;
+                cnts[0]++;
+                queue.emplace_back(dep);
+            }
+        };
+
+        for (auto &dep : pb->deps)
+            fix(dep);
+        for (auto &idep : pb->ideps)
+            fix(idep);
+        for (auto &iidep : pb->iideps)
+            fix(iidep);
+    }
+
+    if (!_quiet) {
+        auto rest = _builds.size();
+        for (size_t i{}; i <= par; i++) {
+            if (!i)
+                std::cerr << "ajnin: File common has " << cnts[i] << " builds;\n";
+            else
+                std::cerr << "ajnin: File #" << i - 1 << " has " << cnts[i] << " builds;\n";
+            rest -= cnts[i];
+        }
+        std::cerr << "ajnin: There are " << rest << " builds unassigned.\n";
+    }
+
+    std::vector<std::unique_ptr<std::ofstream>> ofss;
+    ofss.reserve(1 + par);
+    for (size_t i{}; i <= par; i++) {
+        auto bd = out + "/";
+        if (i) bd += std::to_string(i - 1) + "/";
+        std::system(("mkdir -p "s + bd).c_str());
+        auto pos = std::make_unique<std::ofstream>(bd + "build.ninja");
+        if (i) *pos << "builddir = " << bd << "\n";
+        ofss.emplace_back(std::move(pos));
+    }
+
+    for (auto &pos : ofss)
+        for (auto &t : _prolog)
+            *pos << manager::expand_dollar(t) << '\n';
+
+    size_t cnt{};
+    for (auto &[art, pb] : _builds) {
+        auto it = assignment.find(art);
+        if (it == assignment.end()) continue;
+
+        auto the_art = manager::expand_dollar(art);
+
+        cnt++;
+        auto &os = *ofss[it->second];
+        os << "build " << the_art << ": " << manager::expand_dollar(pb->rule);
+        for (auto &dep : pb->deps)
+            os << " " << manager::expand_dollar(dep);
+        if (!pb->ideps.empty()) {
+            os << " |";
+            for (auto &dep : pb->ideps)
+                os << " " << manager::expand_dollar(dep);
+        }
+        if (!pb->iideps.empty()) {
+            os << " ||";
+            for (auto &dep : pb->iideps)
+                os << " " << manager::expand_dollar(dep);
+        }
+        if (!pb->vars.empty() || _pools.contains(art)) {
+            os << '\n';
+            for (auto &[va, vl] : pb->vars)
+                os << "    " << manager::expand_dollar(va) << " = " << manager::expand_dollar(vl) << '\n';
+            if (_pools.contains(art))
+                os << "    pool = " << _pools.at(art) << "\n";
+        }
+        os << '\n';
+    }
+
+    for (auto &pos : ofss)
+        for (auto &t : _epilog)
+            *pos << manager::expand_dollar(t) << '\n';
+
+    if (!_quiet)
+        std::cerr << "ajnin: Emitted " << cnt << " out of " << _builds.size() << " builds\n";
+}
