@@ -44,17 +44,33 @@ And then run `ninja` **speedy**.
 
 ## Usage
 
+`ajnin`: Convert `*.ajnin` into `*.ninja`
 ```
-Usage: ajnin [-h|--help] [-q|--quiet] [-C <chdir>] [-d|--debug] [-o <output>]
-             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]
-             [<input>]
+Usage: ajnin  [-h|--help] [-q|--quiet] [-C <chdir>] [-d|--debug] [-o <output>]
+              [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]
+              [<input>]
 Note: -s and -S implies --bare, which cannot be override
+```
 
-Usage: an    [-h|--help] [-q|--quiet] [-C <chdir>] [-o <build.ninja>]
-             [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]
-             [-f <build.ajnin>] [<ninja command line arguments>]...
+`an`: Convert `*.ajnin` into `*.ninja` and execute
+```
+Usage: an     [-h|--help] [-q|--quiet] [-C <chdir>] [-o <build.ninja>]
+              [-s|--slice <regex>]... [-S|--solo <regex>]... [--bare]
+              [-f <build.ajnin>] [<ninja command line arguments>]...
 Note: -s and -S implies -o '', but can be override
 ```
+
+`sanity`: Convert one `*.ajnin` into multiple `*.ninja`s
+```
+Usage: sanity [-h|--help] [-q|--quiet] [-C <chdir>]
+              [-s|--slice <regex>]... [-S|--solo <regex>]...
+              [-f <build.ajnin>] [-o <sanity.d>]
+              [-j <parallelism>] [<regex>]...
+```
+
+## ajnin Language Reference
+
+Checkout `tests/*.ajnin`. You are on your own. Good luck.
 
 ## Legal
 
