@@ -32,6 +32,9 @@ add_subdirectory(tests)
 # required if linking to static library
 add_definitions(-DANTLR4CPP_STATIC)
 
+# Workaround: https://github.com/antlr/antlr4/issues/3418
+set(ANTLR4_TAG e4c1a74)
+
 # add external build for antlrcpp
 include(ExternalAntlr4Cpp)
 # add antrl4cpp artifacts to project environment
