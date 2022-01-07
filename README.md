@@ -61,7 +61,7 @@ Note: -s and -S implies -o '', but can be override
 This project is licensed under **GNU AGPL v3.0** only. (AGPL-3.0-only).
 
 ```
-Copyright (C) 2021 b1f6c1c4
+Copyright (C) 2021-2022 b1f6c1c4
 
 This file is part of ajnin.
 
