@@ -36,15 +36,6 @@ antlrcpp::Any manager::visitProlog(TParser::PrologContext *ctx) {
     return {};
 }
 
-antlrcpp::Any manager::visitEpilog(TParser::EpilogContext *ctx) {
-    auto s0 = ctx->LiteralNL()->getText();
-    if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
-    s0.pop_back();
-
-    _epilog.emplace_back(expand_env(s0));
-    return {};
-}
-
 antlrcpp::Any manager::visitFileStmt(TParser::FileStmtContext *ctx) {
     auto s0 = ctx->Path()->getText();
     if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
@@ -212,9 +203,6 @@ void manager::dump(std::ostream &os, const SS &slices, const SS &solos, bool bar
         }
         os << '\n';
     }
-
-    for (auto &t : _epilog)
-        os << manager::expand_dollar(t) << '\n';
 
     if (!_quiet)
         std::cerr << "ajnin: Emitted " << cnt << " out of " << _builds.size() << " builds\n";
@@ -412,10 +400,6 @@ void manager::split_dump(const S &out, const SS &slices, const SS &solos, const 
         }
         os << '\n';
     }
-
-    for (auto &pos : ofss)
-        for (auto &t : _epilog)
-            *pos << manager::expand_dollar(t) << '\n';
 
     if (!_quiet)
         std::cerr << "ajnin: Emitted " << cnt << " out of " << _builds.size() << " builds\n";

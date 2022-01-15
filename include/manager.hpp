@@ -136,7 +136,7 @@ namespace parsing {
         bool _is_current_rule_2{};
         bool _is_pipeGroup{};
 
-        SS _prolog, _epilog;
+        SS _prolog;
         Ss _ajnin_deps;
 
         mutable std::set<S> _env_notif;
@@ -206,8 +206,6 @@ namespace parsing {
         antlrcpp::Any visitValue(TParser::ValueContext *ctx) override;
 
         antlrcpp::Any visitProlog(TParser::PrologContext *ctx) override;
-
-        antlrcpp::Any visitEpilog(TParser::EpilogContext *ctx) override;
 
         antlrcpp::Any visitFileStmt(TParser::FileStmtContext *ctx) override;
 

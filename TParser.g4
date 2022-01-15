@@ -142,11 +142,9 @@ assignment: Assign value?;
 
 value: Dollar ID | Dollar SubID | SingleString | DoubleString;
 
-literal: prolog | epilog;
+literal: prolog;
 
 prolog: LiteralProlog LiteralNL;
-
-epilog: LiteralEpilog LiteralNL;
 
 fileStmt: KInclude KFile ListSearch Path;
 
