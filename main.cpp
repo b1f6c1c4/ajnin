@@ -21,6 +21,7 @@
 
 #include "config.h"
 #include "manager.hpp"
+#include "filter.hpp"
 
 using namespace std::string_literals;
 
@@ -121,6 +122,10 @@ int main(int argc, char *argv[]) {
             in = argv[0];
     }
 
+    auto flt = parsing::cascade_filter{
+            std::make_shared<parsing::solo_filter>(solos),
+            std::make_shared<parsing::slice_filter>(slices) };
+
     if (sanity) {
         if (!parallelism)
             throw std::runtime_error{ "You forgot -j" };
@@ -130,7 +135,7 @@ int main(int argc, char *argv[]) {
         } else {
             mgr.load_file(in);
         }
-        mgr.split_dump(out, slices, solos, sanity_args, parallelism);
+        mgr.split_dump(out, flt, sanity_args, parallelism);
         exit(0);
     }
 
@@ -141,7 +146,7 @@ int main(int argc, char *argv[]) {
         } else {
             mgr.load_file(in);
         }
-        mgr.dump(os, slices, solos, bare);
+        mgr.dump(os, flt, bare);
     };
 
     if (out.empty()) {

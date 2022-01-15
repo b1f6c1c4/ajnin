@@ -26,6 +26,7 @@
 #include <string>
 #include "TParser.h"
 #include "TParserBaseVisitor.h"
+#include "filter.hpp"
 
 namespace parsing {
     using S = std::string;
@@ -155,6 +156,7 @@ namespace parsing {
         void art_to_dep();
         void append_artifact();
         void apply_template(const S &s0, const SS &args, SS *parts);
+        void dump_build(std::ostream &os, const pbuild_t &pb) const;
 
     public:
         explicit manager(bool debug = false, bool quiet = false, size_t limit = 15);
@@ -225,9 +227,9 @@ namespace parsing {
 
         void load_file(const std::string &str, bool flat = false);
 
-        void dump(std::ostream &os, const SS &slices, const SS &solos, bool bare = false);
+        void dump(std::ostream &os, const filter &flt, bool bare = false);
 
-        void split_dump(const S &out, const SS &slices, const SS &solos, const SS &eps, size_t par);
+        void split_dump(const S &out, const filter &flt, const SS &eps, size_t par);
 
         static bool collect_deps(const S &fn, bool debug);
     };

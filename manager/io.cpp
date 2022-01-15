@@ -136,18 +136,38 @@ void manager::load_file(const std::string &str, bool flat) {
     _depth--;
 }
 
+void manager::dump_build(std::ostream &os, const pbuild_t &pb) const {
+    const auto &art = pb->art;
+    auto the_art = manager::expand_dollar(art);
+    os << "build " << the_art << ": " << manager::expand_dollar(pb->rule);
+    for (auto &dep : pb->deps)
+        os << " " << manager::expand_dollar(dep);
+    if (!pb->ideps.empty()) {
+        os << " |";
+        for (auto &dep : pb->ideps)
+            os << " " << manager::expand_dollar(dep);
+    }
+    if (!pb->iideps.empty()) {
+        os << " ||";
+        for (auto &dep : pb->iideps)
+            os << " " << manager::expand_dollar(dep);
+    }
+    if (!pb->vars.empty() || _pools.contains(art)) {
+        os << '\n';
+        for (auto &[va, vl] : pb->vars)
+            os << "    " << manager::expand_dollar(va) << " = " << manager::expand_dollar(vl) << '\n';
+        if (_pools.contains(art))
+            os << "    pool = " << _pools.at(art) << "\n";
+    }
+    os << '\n';
+}
+
 static constexpr char g_ninja_prolog1[] = "# ajnin deps: ";
 static constexpr char g_ninja_prolog2[] = "# No more ajnin deps.";
 
-void manager::dump(std::ostream &os, const SS &slices, const SS &solos, bool bare) {
+void manager::dump(std::ostream &os, const filter &flt, bool bare) {
     if (!_quiet)
         std::cerr << "ajnin: Emitting " << _builds.size() << " builds\n";
-
-    std::deque<boost::regex> the_slices, the_solos;
-    for (auto &s : slices)
-        the_slices.emplace_back(s);
-    for (auto &s : solos)
-        the_solos.emplace_back(s);
 
     S max_deps_art;
     size_t max_deps{};
@@ -173,35 +193,11 @@ void manager::dump(std::ostream &os, const SS &slices, const SS &solos, bool bar
 
     size_t cnt{};
     for (auto &[art, pb] : _builds) {
-        auto the_art = manager::expand_dollar(art);
-        auto ma = [&](const boost::regex &re) { return boost::regex_match(the_art, re); };
-        if (!the_solos.empty() && std::none_of(the_solos.begin(), the_solos.end(), ma)) continue;
-        if (!the_slices.empty() && std::any_of(the_slices.begin(), the_slices.end(), ma))
-            if (std::filesystem::exists(the_art))
-                continue;
+        if (flt(manager::expand_dollar(art)) == -1)
+            continue;
 
         cnt++;
-        os << "build " << the_art << ": " << manager::expand_dollar(pb->rule);
-        for (auto &dep : pb->deps)
-            os << " " << manager::expand_dollar(dep);
-        if (!pb->ideps.empty()) {
-            os << " |";
-            for (auto &dep : pb->ideps)
-                os << " " << manager::expand_dollar(dep);
-        }
-        if (!pb->iideps.empty()) {
-            os << " ||";
-            for (auto &dep : pb->iideps)
-                os << " " << manager::expand_dollar(dep);
-        }
-        if (!pb->vars.empty() || _pools.contains(art)) {
-            os << '\n';
-            for (auto &[va, vl] : pb->vars)
-                os << "    " << manager::expand_dollar(va) << " = " << manager::expand_dollar(vl) << '\n';
-            if (_pools.contains(art))
-                os << "    pool = " << _pools.at(art) << "\n";
-        }
-        os << '\n';
+        dump_build(os, pb);
     }
 
     if (!_quiet)
@@ -264,22 +260,10 @@ antlrcpp::Any manager::visitMetaStmt(TParser::MetaStmtContext *ctx) {
     return {};
 }
 
-void manager::split_dump(const S &out, const SS &slices, const SS &solos, const SS &eps, size_t par) {
-    std::deque<boost::regex> the_slices, the_solos, the_eps;
-    for (auto &s : slices)
-        the_slices.emplace_back(s);
-    for (auto &s : solos)
-        the_solos.emplace_back(s);
+void manager::split_dump(const S &out, const filter &flt, const SS &eps, size_t par) {
+    std::deque<boost::regex> the_eps;
     for (auto &s : eps)
         the_eps.emplace_back(s);
-    auto is_ignored = [&](const S &the_art) {
-        auto ma = [&](const boost::regex &re) { return boost::regex_match(the_art, re); };
-        if (!the_solos.empty() && std::none_of(the_solos.begin(), the_solos.end(), ma)) return true;
-        if (!the_slices.empty() && std::any_of(the_slices.begin(), the_slices.end(), ma))
-            if (std::filesystem::exists(the_art))
-                return true;
-        return false;
-    };
 
     // none: Unassigned
     // 0: Assigned to the common file
@@ -294,7 +278,7 @@ void manager::split_dump(const S &out, const SS &slices, const SS &solos, const 
     // Initial round-robin assignment
     for (auto &[art, pb] : _builds) {
         auto the_art = manager::expand_dollar(art);
-        if (is_ignored(the_art)) continue;
+        if (flt(manager::expand_dollar(art)) == -1) continue;
         for (auto &re : the_eps) {
             boost::smatch m;
             if (!boost::regex_match(the_art, m, re)) continue;
@@ -318,7 +302,7 @@ void manager::split_dump(const S &out, const SS &slices, const SS &solos, const 
 
         auto fix = [&](const S &dep) {
             if (!_builds.contains(dep)) return;
-            if (is_ignored(manager::expand_dollar(dep))) return;
+            if (flt(manager::expand_dollar(dep)) == -1) return;
             auto it = assignment.find(dep);
             if (it == assignment.end()) {
                 assignment[dep] = ass;
@@ -374,31 +358,8 @@ void manager::split_dump(const S &out, const SS &slices, const SS &solos, const 
         auto it = assignment.find(art);
         if (it == assignment.end()) continue;
 
-        auto the_art = manager::expand_dollar(art);
-
         cnt++;
-        auto &os = *ofss[it->second];
-        os << "build " << the_art << ": " << manager::expand_dollar(pb->rule);
-        for (auto &dep : pb->deps)
-            os << " " << manager::expand_dollar(dep);
-        if (!pb->ideps.empty()) {
-            os << " |";
-            for (auto &dep : pb->ideps)
-                os << " " << manager::expand_dollar(dep);
-        }
-        if (!pb->iideps.empty()) {
-            os << " ||";
-            for (auto &dep : pb->iideps)
-                os << " " << manager::expand_dollar(dep);
-        }
-        if (!pb->vars.empty() || _pools.contains(art)) {
-            os << '\n';
-            for (auto &[va, vl] : pb->vars)
-                os << "    " << manager::expand_dollar(va) << " = " << manager::expand_dollar(vl) << '\n';
-            if (_pools.contains(art))
-                os << "    pool = " << _pools.at(art) << "\n";
-        }
-        os << '\n';
+        dump_build(*ofss[it->second], pb);
     }
 
     if (!_quiet)
