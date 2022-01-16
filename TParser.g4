@@ -130,7 +130,7 @@ artifact: (stage | pipe) (Tilde Tilde?)? NL1?;
 
 pipe: (stage (NL1? alsoGroup)* | pipeGroup) operAlso;
 
-stage: Stage;
+stage: Stage | KDefault;
 
 operAlso: (NL1? operation NL1? (alsoGroup NL1?)*)+;
 

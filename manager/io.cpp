@@ -138,7 +138,10 @@ void manager::load_file(const std::string &str, bool flat) {
 
 void manager::dump_build(std::ostream &os, const pbuild_t &pb) const {
     const auto &art = pb->art;
-    os << "build " << manager::expand_ninja(art) << ": " << manager::expand_ninja(pb->rule);
+    if (art == "default")
+        os << "default";
+    else
+        os << "build " << manager::expand_ninja(art) << ": " << manager::expand_ninja(pb->rule);
     for (auto &dep : pb->deps)
         os << " " << manager::expand_ninja(dep);
     if (!pb->ideps.empty()) {
@@ -275,9 +278,12 @@ void manager::split_dump(const S &out, const filter &flt, const SS &eps, size_t 
         std::cerr << "ajnin: Finding endpoints from " << _builds.size() << " builds\n";
 
     // Initial round-robin assignment
+    size_t cnt_total{};
     for (auto &[art, pb] : _builds) {
+        if (art == "default") continue;
         auto the_art = manager::expand_dollar(art);
         if (flt(the_art) == -1) continue;
+        cnt_total++;
         for (auto &re : the_eps) {
             boost::smatch m;
             if (!boost::regex_match(the_art, m, re)) continue;
@@ -288,7 +294,7 @@ void manager::split_dump(const S &out, const filter &flt, const SS &eps, size_t 
     }
 
     if (!_quiet)
-        std::cerr << "ajnin: Spliting " << _builds.size() << " builds "
+        std::cerr << "ajnin: Spliting " << cnt_total << "/" << _builds.size() << " builds "
                   << "with " << queue.size() << " endpoints into " << par << " files, "
                   << "avg. " << queue.size() / par << " ep/file.\n";
 
@@ -326,7 +332,7 @@ void manager::split_dump(const S &out, const filter &flt, const SS &eps, size_t 
     }
 
     if (!_quiet) {
-        auto rest = _builds.size();
+        auto rest = cnt_total;
         for (size_t i{}; i <= par; i++) {
             if (!i)
                 std::cerr << "ajnin: File common has " << cnts[i] << " builds;\n";
@@ -362,5 +368,5 @@ void manager::split_dump(const S &out, const filter &flt, const SS &eps, size_t 
     }
 
     if (!_quiet)
-        std::cerr << "ajnin: Emitted " << cnt << " out of " << _builds.size() << " builds\n";
+        std::cerr << "ajnin: Emitted " << cnt << " out of " << cnt_total << "/" << _builds.size() << " builds\n";
 }

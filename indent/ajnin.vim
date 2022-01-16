@@ -55,12 +55,12 @@ function! AjninIndent(lnum)
   endif
   "         --rule-- (stage)]
   " <text>
-  if l:prevl =~ '^\s*\(--\|>>\|<\).*)\s*]\s*$'
+  if l:prevl =~ '^\s*\(--\|>>\|<\).*\()\|default\)\s*]\s*$'
     let l:ind -= 2 * shiftwidth()
   endif
   "     --rule-- (stage)
   " <text>
-  if l:prevl =~ '^\s*\(--\|>>\).*)\s*\(!\s*\)\?$'
+  if l:prevl =~ '^\s*\(--\|>>\).*\()\|default\)\s*\(!\s*\)\?$'
     let l:ind -= shiftwidth()
   endif
   "     <tmpl>

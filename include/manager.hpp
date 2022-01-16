@@ -138,6 +138,7 @@ namespace parsing {
         bool _is_pipeGroup{};
 
         SS _prolog;
+        Ss _default;
         Ss _ajnin_deps;
 
         mutable std::set<S> _env_notif;

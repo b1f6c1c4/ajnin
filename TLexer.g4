@@ -62,6 +62,7 @@ KTemplate: 'template';
 KExecute: 'execute';
 KMeta: 'meta';
 KPool: 'pool';
+KDefault: 'default';
 
 IsEmpty: '-z';
 IsNonEmpty: '-n';

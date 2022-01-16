@@ -34,6 +34,9 @@ void manager::art_to_dep() {
 void manager::append_artifact() {
     for (auto ptr = _current; ptr; ptr = ptr->prev)
         if (ptr->app) {
+            if (_current_artifact == "default")
+                throw std::runtime_error{ "default cannot become dependent, even thru collect" };
+
             auto orig_artifact = std::move(_current_artifact);
 
             auto b = std::make_shared<build_t>(*ptr->app);
@@ -105,9 +108,32 @@ antlrcpp::Any manager::visitPipe(TParser::PipeContext *ctx) {
 // _current_artifact will be set.
 // _is_pipeGroup will be unset.
 antlrcpp::Any manager::visitStage(TParser::StageContext *ctx) {
+    if (ctx->KDefault()) {
+        if (_current_rule)
+            throw std::runtime_error{ "default cannot become dependent" };
+        if (_current_template)
+            throw std::runtime_error{ "default cannot be used inside template definitions" };
+        if (_current_build) {
+            if (_current_build->rule != "phony")
+                throw std::runtime_error{ "Only phony can target default" };
+            if (!_current_build->ideps.empty() || !_current_build->iideps.empty())
+                throw std::runtime_error{ "default cannot have ideps or iideps" };
+        } else if (_current->app) {
+            for (auto ptr = _current->prev; ptr; ptr = ptr->prev)
+                if (ptr->app)
+                    throw std::runtime_error{ "default cannot become dependent, even thru collect" };
+        }
+        _current_artifact = "default";
+        _is_pipeGroup = false;
+        return {};
+    }
+
     auto s0 = ctx->Stage()->getText();
     if (!s0.starts_with('(') || !s0.ends_with(')')) throw std::runtime_error{ "Lexer messed up with ()" };
     s0 = s0.substr(1, s0.length() - 2);
+
+    if (s0 == "default")
+        throw std::runtime_error{ "Use default instead of (default)" };
 
     auto [s, glob] = expand(s0);
     if (glob) throw std::runtime_error{ "Glob not allow in " + s0 };
