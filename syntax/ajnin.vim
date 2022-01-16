@@ -27,7 +27,7 @@ set cpo&vim
 syn case match
 
 syn match ajninComment "#.*$" contains=@Spell,ajninTodo
-syn region ajninLiteral start="^> " end=".*$" contains=ajninEnv
+syn region ajninLiteral start="^>" end=".*$" contains=ajninEnv
 
 syn match ajninKeyword "\<rule\>" nextgroup=ajninRule skipwhite
 syn match ajninKeyword "\<list\>" nextgroup=ajninList skipwhite

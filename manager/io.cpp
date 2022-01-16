@@ -28,6 +28,13 @@ using namespace std::string_literals;
 manager::manager(bool debug, bool quiet, size_t limit) : _debug{ debug }, _debug_limit{ limit }, _quiet{ quiet } { }
 
 antlrcpp::Any manager::visitProlog(TParser::PrologContext *ctx) {
+    if (ctx->LiteralEmptyText()) {
+        auto s0 = ctx->LiteralEmptyText()->getText();
+        if (!s0.starts_with('>')) throw std::runtime_error{ "Lexer messed up with >" };
+        if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
+        _prolog.emplace_back(s0.substr(1, s0.size() - 2));
+        return {};
+    }
     auto s0 = ctx->LiteralNL()->getText();
     if (!s0.ends_with('\n')) throw std::runtime_error{ "Lexer messed up with \\n" };
     s0.pop_back();

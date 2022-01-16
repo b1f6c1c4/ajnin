@@ -103,6 +103,7 @@ BNL: '\\' '\r'? '\n' -> skip;
 NL1: '\r'? '\n';
 
 LiteralProlog : '> ' -> mode(literal);
+LiteralEmptyText: '>' NL1;
 
 OpenPar: '(' -> more, mode(stage);
 

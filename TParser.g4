@@ -144,7 +144,7 @@ value: Dollar ID | Dollar SubID | SingleString | DoubleString;
 
 literal: prolog;
 
-prolog: LiteralProlog LiteralNL;
+prolog: LiteralProlog LiteralNL | LiteralEmptyText;
 
 fileStmt: KInclude KFile ListSearch Path;
 
