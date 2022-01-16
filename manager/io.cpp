@@ -138,24 +138,23 @@ void manager::load_file(const std::string &str, bool flat) {
 
 void manager::dump_build(std::ostream &os, const pbuild_t &pb) const {
     const auto &art = pb->art;
-    auto the_art = manager::expand_dollar(art);
-    os << "build " << the_art << ": " << manager::expand_dollar(pb->rule);
+    os << "build " << manager::expand_ninja(art) << ": " << manager::expand_ninja(pb->rule);
     for (auto &dep : pb->deps)
-        os << " " << manager::expand_dollar(dep);
+        os << " " << manager::expand_ninja(dep);
     if (!pb->ideps.empty()) {
         os << " |";
         for (auto &dep : pb->ideps)
-            os << " " << manager::expand_dollar(dep);
+            os << " " << manager::expand_ninja(dep);
     }
     if (!pb->iideps.empty()) {
         os << " ||";
         for (auto &dep : pb->iideps)
-            os << " " << manager::expand_dollar(dep);
+            os << " " << manager::expand_ninja(dep);
     }
     if (!pb->vars.empty() || _pools.contains(art)) {
         os << '\n';
         for (auto &[va, vl] : pb->vars)
-            os << "    " << manager::expand_dollar(va) << " = " << manager::expand_dollar(vl) << '\n';
+            os << "    " << manager::expand_ninja(va) << " = " << manager::expand_ninja(vl) << '\n';
         if (_pools.contains(art))
             os << "    pool = " << _pools.at(art) << "\n";
     }
@@ -278,7 +277,7 @@ void manager::split_dump(const S &out, const filter &flt, const SS &eps, size_t 
     // Initial round-robin assignment
     for (auto &[art, pb] : _builds) {
         auto the_art = manager::expand_dollar(art);
-        if (flt(manager::expand_dollar(art)) == -1) continue;
+        if (flt(the_art) == -1) continue;
         for (auto &re : the_eps) {
             boost::smatch m;
             if (!boost::regex_match(the_art, m, re)) continue;

@@ -149,6 +149,25 @@ S manager::expand_dollar(S s) {
     return s;
 }
 
+S manager::expand_ninja(S s) {
+    for (size_t i{}; i < s.size(); i++) {
+        auto &c = s[i];
+        switch (c) {
+            case '\e':
+                c = '$';
+                [[fallthrough]];
+            case '$':
+            case ':':
+            case ' ':
+                s.insert(s.begin() + static_cast<ssize_t>(i++), '$');
+                continue;
+            default:
+                continue;
+        }
+    }
+    return s;
+}
+
 S manager::expand_quote(S s, char c) {
     for (size_t i{}; i < s.size(); i++) {
         if (s[i] != '$') continue;
