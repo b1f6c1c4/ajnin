@@ -15,7 +15,7 @@
 # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.17)
-project(ajnin VERSION 0.2)
+project(ajnin VERSION 0.4)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
