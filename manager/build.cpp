@@ -211,8 +211,12 @@ antlrcpp::Any manager::visitAssignment(TParser::AssignmentContext *ctx) {
 
     ctx->value()->accept(this);
     auto &rule = _current_rule->name;
-    if (append)
-        _current_value = (*_current)[rule].vars[as] + _current_value;
+    if (append) {
+        if (_current_rule->vars.contains(as))
+            _current_value = _current_rule->vars[as] + _current_value;
+        else
+            _current_value = (*_current)[rule].vars[as] + _current_value;
+    }
 
     _current_rule->vars[as] = std::move(_current_value);
     return {};

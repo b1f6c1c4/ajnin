@@ -26,7 +26,7 @@ build b12: ru a12 | r1 r2 r3 || rr1 rr3
     b = x
 
 build b15: ru a15 | r1 r2 r3 || rr1 rr3
-    a = xx
+    a = xy
     b = x
     pool = hoo
 

@@ -34,7 +34,7 @@ rule ru &a="rua"
     (a1) --ru-- (b1)
     pool po := .*
     (a12) --ru&a=-- (b12)
-    (a15) --ru&a="xx"-- (b15)
+    (a15) --ru&a="x"&a+="y"-- (b15)
 }
 
 include file := assign-2.ajnin
