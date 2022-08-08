@@ -18,7 +18,6 @@ cmake_minimum_required(VERSION 3.17)
 project(ajnin VERSION 0.4)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -105,3 +104,19 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sanity.1 DESTINATION share/man/)
 install(FILES indent/ajnin.vim DESTINATION share/vim/vimfiles/indent/)
 install(FILES syntax/ajnin.vim DESTINATION share/vim/vimfiles/syntax/)
 install(FILES LICENSE DESTINATION share/licenses/ajnin/)
+
+if(DEFINED ENV{COVERALLS_REPO_TOKEN})
+    include(Coveralls)
+    target_compile_options(ajnin PRIVATE -fprofile-arcs -ftest-coverage)
+    target_link_libraries(ajnin gcov)
+    target_link_options(ajnin PRIVATE --coverage)
+    set(COVERAGE_SRCS
+        main.cpp 
+        manager/aux.cpp
+        manager/build.cpp
+        manager/io.cpp
+        manager/non-build.cpp
+        include/filter.hpp
+        include/manager.hpp)
+    coveralls_setup("${COVERAGE_SRCS}" ON)
+endif()

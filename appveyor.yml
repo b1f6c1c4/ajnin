@@ -1,0 +1,31 @@
+version: 0.4.{build}
+
+skip_tags: true
+
+skip_commits:
+  message: /\[ci skip\]|\[skip ci\]/
+
+image: Ubuntu2004
+
+shallow_clone: true
+clone_depth: 1
+
+environment:
+  COVERALLS_REPO_TOKEN:
+    secure: DJqo9Kbit+Ndeo872mHNnpvhC3YiOjmSlc7sI01gHeSbxRC2t6VMfY8Fdjh7D3kW
+
+install:
+  - sudo apt-get update && sudo apt-get install -y antlr4
+  - sudo wget -P /usr/share/java/ https://www.antlr.org/download/antlr-4.10.1-complete.jar
+
+before_build:
+  - cmake -S . -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug -G Ninja
+
+build_script:
+  - cmake --build cmake-build-debug
+
+test_script:
+  - cmake --build cmake-build-debug -- test
+
+after_test:
+  - cmake --build cmake-build-debug -- coveralls
