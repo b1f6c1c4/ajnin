@@ -1,4 +1,4 @@
-find_package(Java 11 QUIET COMPONENTS Runtime)
+find_package(Java 11 COMPONENTS Runtime)
 
 if(NOT ANTLR_EXECUTABLE)
   find_program(ANTLR_EXECUTABLE

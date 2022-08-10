@@ -12,10 +12,12 @@ clone_depth: 1
 
 environment:
   COVERALLS_REPO_TOKEN:
-    secure: DJqo9Kbit+Ndeo872mHNnpvhC3YiOjmSlc7sI01gHeSbxRC2t6VMfY8Fdjh7D3kW
+    secure: H8M9TzLC1Oxr/sgpj8ZwfYQOgzHoAI48eL2TOTOddAERzfu5nZy7Zb9f/p7mX2y2
+  JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64/
 
 install:
-  - sudo apt-get update && sudo apt-get install -y antlr4
+  - sudo apt-get update
+  - sudo apt-get install -y ninja-build libboost-all-dev antlr4 pandoc pkg-config uuid-dev
   - sudo wget -P /usr/share/java/ https://www.antlr.org/download/antlr-4.10.1-complete.jar
 
 before_build:
@@ -23,6 +25,7 @@ before_build:
 
 build_script:
   - cmake --build cmake-build-debug
+  - cmake --build cmake-build-debug -- manual
 
 test_script:
   - cmake --build cmake-build-debug -- test

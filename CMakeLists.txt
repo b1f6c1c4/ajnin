@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.16)
 project(ajnin VERSION 0.4)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -44,7 +44,7 @@ set(ANTLR_EXECUTABLE /usr/share/java/antlr-4.10.1-complete.jar CACHE STRING "Pat
 # add macros to generate ANTLR Cpp code from grammar
 find_package(ANTLR REQUIRED)
 
-find_package(Boost 1.75.0 REQUIRED)
+find_package(Boost 1.71.0 REQUIRED)
 
 # Call macro to add lexer and grammar to your build dependencies.
 antlr_target(TLexer TLexer.g4 LEXER

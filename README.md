@@ -1,5 +1,14 @@
 # [ˈajn in]: A Beautiful [Ninja](https://github.com/ninja-build/ninja) generator
 
+[![AUR](https://img.shields.io/aur/version/ajnin.svg?style=flat-square)](https://aur.archlinux.org/packages/ajnin)
+[![AUR](https://img.shields.io/aur/last-modified/ajnin.svg?style=flat-square)](https://aur.archlinux.org/packages/ajnin)
+[![GitHub last commit](https://img.shields.io/github/last-commit/b1f6c1c4/ajnin.svg?style=flat-square)](https://github.com/b1f6c1c4/ajnin)
+[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/b1f6c1c4/ajnin.svg?style=flat-square)](https://github.com/b1f6c1c4/ajnin)
+[![license](https://img.shields.io/github/license/b1f6c1c4/ajnin.svg?style=flat-square)](https://github.com/b1f6c1c4/ajnin/blob/master/LICENSE)
+
+[![Appveyor Build](https://img.shields.io/appveyor/build/b1f6c1c4/ajnin?style=flat-square)](https://ci.appveyor.com/project/b1f6c1c4/ajnin)
+[![Coveralls](https://img.shields.io/coveralls/github/b1f6c1c4/ajnin.svg?style=flat-square)](https://coveralls.io/github/b1f6c1c4/ajnin)
+
 [[ˈnɪ̈̃nʷd͡ʒʷ ə]](https://github.com/ninja-build/ninja) focuses on **speed**,
 [['ajn in]](https://github.com/b1f6c1c4/ajnin) focuses on **beauty**.
 
