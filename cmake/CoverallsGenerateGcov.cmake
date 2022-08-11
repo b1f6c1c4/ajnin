@@ -61,6 +61,8 @@ if (NOT PROJECT_ROOT)
 	message(FATAL_ERROR "Coveralls: Missing PROJECT_ROOT.")
 endif()
 
+file(MAKE_DIRECTORY "${COV_PATH}/coveralls/")
+
 # Since it's not possible to pass a CMake list properly in the
 # "1;2;3" format to an external process, we have replaced the
 # ";" with "*", so reverse that here so we get it back into the
@@ -185,9 +187,9 @@ message("GCDA files:")
 # (The directories the .gcda files and .o files are found in)
 # and run gcov on those.
 foreach(GCDA ${GCDA_FILES})
-	message("Process: ${GCDA}")
-	message("------------------------------------------------------------------------------")
 	get_filename_component(GCDA_DIR ${GCDA} PATH)
+	message("Process: ${GCDA} on ${GCDA_DIR}")
+	message("------------------------------------------------------------------------------")
 
 	#
 	# The -p below refers to "Preserve path components",
@@ -205,12 +207,12 @@ foreach(GCDA ${GCDA_FILES})
 	#
 	execute_process(
 		COMMAND ${GCOV_EXECUTABLE} -p -o ${GCDA_DIR} ${GCDA}
-		WORKING_DIRECTORY ${COV_PATH}
+		WORKING_DIRECTORY ${COV_PATH}/coveralls/
 	)
 endforeach()
 
 # TODO: Make these be absolute path
-file(GLOB ALL_GCOV_FILES ${COV_PATH}/*.gcov)
+file(GLOB ALL_GCOV_FILES ${COV_PATH}/coveralls/*.gcov)
 
 # Get only the filenames to use for filtering.
 #set(COVERAGE_SRCS_NAMES "")
@@ -390,6 +392,7 @@ foreach (GCOV_FILE ${GCOV_FILES})
 			list(GET RES 2 SOURCE)
 
 			string(STRIP ${HITCOUNT} HITCOUNT)
+			string(REPLACE "*" "" HITCOUNT ${HITCOUNT})
 			string(STRIP ${LINE} LINE)
 
 			# Lines with 0 line numbers are metadata and can be ignored.
