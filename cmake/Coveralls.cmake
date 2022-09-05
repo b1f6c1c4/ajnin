@@ -94,8 +94,8 @@ function(coveralls_setup _COVERAGE_SRCS _COVERALLS_UPLOAD)
 		add_custom_target(coveralls_upload
 			# Upload the JSON to coveralls.
 			COMMAND ${CURL_EXECUTABLE}
-					-X POST -H "Content-Type: application/json"
-					-d @${COVERALLS_FILE}
+					-X POST
+					-F json_file=@${COVERALLS_FILE}
 					https://coveralls.io/api/v1/jobs
 
 			DEPENDS coveralls_generate
