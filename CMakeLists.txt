@@ -31,7 +31,7 @@ add_subdirectory(tests)
 # required if linking to static library
 add_definitions(-DANTLR4CPP_STATIC)
 
-set(ANTLR4_ZIP_REPOSITORY https://github.com/antlr/antlr4/archive/refs/tags/4.10.1.zip)
+set(ANTLR4_ZIP_REPOSITORY https://github.com/antlr/antlr4/archive/refs/tags/4.11.1.zip)
 
 # add external build for antlrcpp
 include(ExternalAntlr4Cpp)
@@ -40,7 +40,7 @@ include_directories(${ANTLR4_INCLUDE_DIRS})
 
 # set variable pointing to the antlr tool that supports C++
 # this is not required if the jar file can be found under PATH environment
-set(ANTLR_EXECUTABLE /usr/share/java/antlr-4.10.1-complete.jar CACHE STRING "Path of antlr-4.10.1-complete.jar")
+set(ANTLR_EXECUTABLE /usr/share/java/antlr-4.11.1-complete.jar CACHE STRING "Path of antlr-4.11.1-complete.jar")
 # add macros to generate ANTLR Cpp code from grammar
 find_package(ANTLR REQUIRED)
 
