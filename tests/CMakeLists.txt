@@ -26,6 +26,8 @@ foreach(src ${tests})
             ${CMAKE_CURRENT_SOURCE_DIR}/${T}.ninja ${CMAKE_CURRENT_BINARY_DIR}/${T}.ninja)
 endforeach()
 
+set_property(TEST env:exe PROPERTY ENVIRONMENT "ENV1=hehe")
+
 add_test(NAME solo:exe WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND ajnin --bare filter/src.ajnin --solo "d..2|t" -o ${CMAKE_CURRENT_BINARY_DIR}/solo.ninja)
 add_test(NAME solo:cmp COMMAND ${CMAKE_COMMAND} -E compare_files
