@@ -1,0 +1,24 @@
+# Copyright (C) 2021-2022 b1f6c1c4
+#
+# This file is part of ajnin.
+#
+# ajnin is free software: you can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License as published by the Free
+# Software Foundation, version 3.
+#
+# ajnin is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for
+# more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
+
+build dst1: src1dst src1
+build dst2: src2dst src2
+build dst3: src3dst src3
+build src/a.c: ccc src/0.c
+build src/c.c: ccc src/b.c
+build src2: dst1src dst1
+build src3: dst2src dst2
+build src4: dst3src dst3

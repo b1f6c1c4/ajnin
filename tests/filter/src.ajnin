@@ -18,3 +18,5 @@
 (src1) --src1dst-- (dst1) --dst1src-- (src2)
 (src2) --src2dst-- (dst2) --dst2src-- (src3)
 (src3) --src3dst-- (dst3) --dst3src-- (src4)
+
+(src/0.c) --ccc-- (src/a.c) --ccc-- (src/b.c) --ccc-- (src/c.c)

@@ -30,3 +30,8 @@ add_test(NAME solo:exe WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND ajnin --bare filter/src.ajnin --solo "d..2|t" -o ${CMAKE_CURRENT_BINARY_DIR}/solo.ninja)
 add_test(NAME solo:cmp COMMAND ${CMAKE_COMMAND} -E compare_files
         ${CMAKE_CURRENT_SOURCE_DIR}/filter/solo.ninja ${CMAKE_CURRENT_BINARY_DIR}/solo.ninja)
+
+add_test(NAME slice:exe WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND ajnin --bare filter/src.ajnin --slice ".*b.*" -o ${CMAKE_CURRENT_BINARY_DIR}/slice.ninja)
+add_test(NAME slice:cmp COMMAND ${CMAKE_COMMAND} -E compare_files
+        ${CMAKE_CURRENT_SOURCE_DIR}/filter/slice.ninja ${CMAKE_CURRENT_BINARY_DIR}/slice.ninja)
