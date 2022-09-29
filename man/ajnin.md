@@ -1,4 +1,4 @@
-% AJNIN(1) ajnin v0.4 | ajnin v0.4 manual
+% AJNIN(1) ajnin v0.5 | ajnin v0.5 manual
 % b1f6c1c4 <b1f6c1c4@gmail.com>
 % August 2021
 

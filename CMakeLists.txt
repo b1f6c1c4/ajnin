@@ -15,7 +15,7 @@
 # along with ajnin.  If not, see <https://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.16)
-project(ajnin VERSION 0.4)
+project(ajnin VERSION 0.5)
 
 set(CMAKE_CXX_STANDARD 20)
 
