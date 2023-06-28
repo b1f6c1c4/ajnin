@@ -1,4 +1,4 @@
-% SANITY(1) ajnin v0.5 | ajnin v0.5 manual
+% SANITY(1) ajnin v0.6 | ajnin v0.6 manual
 % b1f6c1c4 <b1f6c1c4@gmail.com>
 % August 2021
 
