@@ -1,7 +1,7 @@
 " ajnin build file syntax.
 " Language: https://github.com/b1f6c1c4/ajnin
 "
-" Copyright (C) 2021-2022 b1f6c1c4
+" Copyright (C) 2021-2023 b1f6c1c4
 "
 " This file is part of ajnin.
 "

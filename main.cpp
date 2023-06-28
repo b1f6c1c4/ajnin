@@ -1,4 +1,4 @@
-/* Copyright (C) 2021-2022 b1f6c1c4
+/* Copyright (C) 2021-2023 b1f6c1c4
  *
  * This file is part of ajnin.
  *
@@ -42,7 +42,7 @@ void usage() {
     std::cout << "              [-f <build.ajnin>] [-o <sanity.d>]\n";
     std::cout << "              [-j <parallelism>] [<regex>]...\n";
     std::cout << R"(
-Copyright (C) 2021-2022 b1f6c1c4
+Copyright (C) 2021-2023 b1f6c1c4
 
 This file is part of ajnin.
 

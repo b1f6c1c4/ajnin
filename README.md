@@ -86,7 +86,7 @@ Checkout `tests/*.ajnin`. You are on your own. Good luck.
 This project is licensed under **GNU AGPL v3.0** only. (AGPL-3.0-only).
 
 ```
-Copyright (C) 2021-2022 b1f6c1c4
+Copyright (C) 2021-2023 b1f6c1c4
 
 This file is part of ajnin.
 
