@@ -28,19 +28,11 @@ include(CTest)
 enable_testing()
 add_subdirectory(tests)
 
-# required if linking to static library
-add_definitions(-DANTLR4CPP_STATIC)
-
-set(ANTLR4_ZIP_REPOSITORY https://github.com/antlr/antlr4/archive/refs/tags/4.11.1.zip)
-
-# add external build for antlrcpp
-include(ExternalAntlr4Cpp)
-# add antrl4cpp artifacts to project environment
-include_directories(${ANTLR4_INCLUDE_DIRS})
+include_directories(/usr/include/antlr4-runtime)
 
 # set variable pointing to the antlr tool that supports C++
 # this is not required if the jar file can be found under PATH environment
-set(ANTLR_EXECUTABLE /usr/share/java/antlr-4.11.1-complete.jar CACHE STRING "Path of antlr-4.11.1-complete.jar")
+set(ANTLR_EXECUTABLE /usr/share/java/antlr-complete.jar CACHE STRING "Path of antlr-complete.jar")
 # add macros to generate ANTLR Cpp code from grammar
 find_package(ANTLR REQUIRED)
 
@@ -68,7 +60,7 @@ add_executable(ajnin main.cpp
         manager/build.cpp
         ${ANTLR_TLexer_CXX_OUTPUTS}
         ${ANTLR_TParser_CXX_OUTPUTS})
-target_link_libraries(ajnin antlr4_static)
+target_link_libraries(ajnin antlr4-runtime)
 target_link_libraries(ajnin boost_regex)
 
 add_custom_target(link_target_an ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ajnin an)

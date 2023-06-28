@@ -17,8 +17,8 @@ environment:
 
 install:
   - sudo apt-get update
-  - sudo apt-get install -y ninja-build libboost-all-dev antlr4 pandoc pkg-config uuid-dev
-  - sudo wget -P /usr/share/java/ https://www.antlr.org/download/antlr-4.11.1-complete.jar
+  - sudo apt-get install -y ninja-build libboost-all-dev antlr4 antlr4-cpp-runtime pandoc pkg-config uuid-dev
+  - sudo wget -P /usr/share/java/ https://www.antlr.org/download/antlr-4.13.1-complete.jar
 
 before_build:
   - cmake -S . -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug -G Ninja
